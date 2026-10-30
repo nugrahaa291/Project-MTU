@@ -26,7 +26,7 @@
                 <label class="flex items-center gap-2 text-sm">
                     <input type="checkbox" name="ingat" value="1" class="rounded border-gray-300 text-brand focus:ring-brand"> Ingat saya
                 </label>
-                <button class="btn btn-primary w-full">Masuk</button>
+                <button class="btn btn-primary w-full">Masuk Donk</button>
             </form>
         </div>
 
