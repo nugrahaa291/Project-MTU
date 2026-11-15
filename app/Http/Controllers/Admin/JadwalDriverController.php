@@ -146,13 +146,73 @@ class JadwalDriverController extends Controller
     }
 
     /**
-     * Menampilkan form unggah file import jadwal driver.
+     * Memproses import jadwal driver secara langsung dari file yang dipilih di File Explorer.
      */
-    public function importForm(): View
+    public function directImport(Request $request, JadwalImportService $service): RedirectResponse
     {
-        $batchList = JadwalImportBatch::with('uploader')->latest()->limit(10)->get();
+        $request->validate([
+            'file_jadwal' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+            'tahun' => ['nullable', 'integer', 'min:2020', 'max:2035'],
+            'bulan' => ['nullable', 'integer', 'min:1', 'max:12'],
+        ], [
+            'file_jadwal.required' => 'Pilih file jadwal driver (.xlsx, .xls, .csv) terlebih dahulu.',
+            'file_jadwal.mimes' => 'Format file harus berupa Excel (.xlsx, .xls) atau CSV (.csv).',
+            'file_jadwal.max' => 'Ukuran file tidak boleh melebihi 10MB.',
+        ]);
 
-        return view('admin.jadwal-driver.import', compact('batchList'));
+        $file = $request->file('file_jadwal');
+        $tahunDefault = (int) $request->input('tahun', date('Y'));
+        $bulanDefault = (int) $request->input('bulan', date('n'));
+
+        try {
+            $barisData = $service->bacaFile($file);
+            $preview = $service->validasiDanSiapkanPreview($barisData, $tahunDefault, $bulanDefault);
+
+            if (empty($preview['jadwal_valid'])) {
+                $pesanError = "Tidak ada jadwal valid yang ditemukan dalam berkas '{$file->getClientOriginalName()}'.";
+                if (! empty($preview['baris_invalid'])) {
+                    $pesanError .= ' Terdapat ' . count($preview['baris_invalid']) . ' baris bermasalah (NIK/NIP driver tidak terdaftar).';
+                }
+                return back()->with('error', $pesanError);
+            }
+
+            // Langsung eksekusi simpan ke database (timpa = true)
+            $batch = $service->eksekusiImport(
+                $preview['jadwal_valid'],
+                $file->getClientOriginalName(),
+                $preview['format'],
+                $request->user()->id,
+                true
+            );
+
+            ActivityLog::catat(
+                $request->user(),
+                'import_jadwal_driver',
+                "Mengimpor langsung jadwal driver batch {$batch->nomor_batch} ({$batch->total_baris} baris, {$batch->total_driver} driver)"
+            );
+
+            $pesanSukses = "Jadwal driver berhasil diimpor langsung dari berkas '{$file->getClientOriginalName()}'. Batch {$batch->nomor_batch} tersimpan ({$batch->total_libur} jadwal libur, {$batch->total_kerja} jadwal kerja).";
+
+            if (! empty($preview['baris_invalid'])) {
+                $pesanSukses .= ' Catatan: ' . count($preview['baris_invalid']) . ' baris diabaikan karena NIK/NIP tidak terdaftar.';
+            }
+
+            return redirect()->route('admin.jadwal-driver.index', [
+                'tahun' => $batch->periode_tahun,
+                'bulan' => (int) substr($batch->periode_bulan, 5, 2),
+            ])->with('success', $pesanSukses)->with('sukses', $pesanSukses);
+
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal memproses berkas import: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Mengarahkan ke halaman jadwal driver utama (karena proses import kini langsung via File Explorer).
+     */
+    public function importForm(): RedirectResponse
+    {
+        return redirect()->route('admin.jadwal-driver.index');
     }
 
     /**

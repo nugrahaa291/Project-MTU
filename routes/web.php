@@ -90,6 +90,7 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
 
             // Jadwal Libur Driver (Operasional Cabang MTU)
             Route::get('jadwal-driver', [Admin\JadwalDriverController::class, 'index'])->name('jadwal-driver.index');
+            Route::post('jadwal-driver/direct-import', [Admin\JadwalDriverController::class, 'directImport'])->name('jadwal-driver.direct-import');
             Route::get('jadwal-driver/template', [Admin\JadwalDriverController::class, 'exportTemplate'])->name('jadwal-driver.template');
             Route::get('jadwal-driver/import', [Admin\JadwalDriverController::class, 'importForm'])->name('jadwal-driver.import');
             Route::post('jadwal-driver/preview', [Admin\JadwalDriverController::class, 'previewImport'])->name('jadwal-driver.preview');

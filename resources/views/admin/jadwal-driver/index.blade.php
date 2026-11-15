@@ -16,10 +16,20 @@
                 + Tambah Libur Driver
             </button>
 
-            {{-- Tombol 2: Import Jadwal Libur --}}
-            <a href="{{ route('admin.jadwal-driver.import') }}" class="btn btn-dark btn-sm whitespace-nowrap">
+            {{-- Tombol 2: Import Jadwal Libur (Langsung Buka File Explorer & Eksekusi Import) --}}
+            <form id="formImportLangsung" action="{{ route('admin.jadwal-driver.direct-import') }}" method="POST" enctype="multipart/form-data" class="hidden">
+                @csrf
+                <input type="hidden" name="tahun" value="{{ $tahun }}">
+                <input type="hidden" name="bulan" value="{{ $bulan }}">
+                <input type="file" name="file_jadwal" id="inputImportLangsung" accept=".xlsx,.xls,.csv" onchange="submitImportLangsung(this)">
+            </form>
+            <button type="button"
+                    id="btnImportJadwalLangsung"
+                    onclick="document.getElementById('inputImportLangsung').click()"
+                    class="btn btn-dark btn-sm whitespace-nowrap cursor-pointer"
+                    title="Pilih file Excel (.xlsx, .xls) atau CSV (.csv) untuk langsung diimpor">
                 &uarr; Import Jadwal Libur
-            </a>
+            </button>
 
             {{-- Tombol 3: Template Excel --}}
             <a href="{{ route('admin.jadwal-driver.template') }}" class="btn btn-outline btn-sm whitespace-nowrap" title="Unduh Template Excel Standar (.xlsx)">
@@ -475,5 +485,29 @@
                 if (dropdown) dropdown.classList.remove('hidden');
             }
         });
+
+        // Submit form otomatis saat file dipilih di File Explorer
+        function submitImportLangsung(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Ukuran berkas maksimal 10MB.');
+                input.value = '';
+                return;
+            }
+            const btn = document.getElementById('btnImportJadwalLangsung');
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = `
+                    <svg class="animate-spin -ml-0.5 mr-1.5 h-3.5 w-3.5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Mengimpor...
+                `;
+            }
+            document.getElementById('formImportLangsung').submit();
+        }
     </script>
 @endsection

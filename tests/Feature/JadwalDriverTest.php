@@ -381,6 +381,58 @@ class JadwalDriverTest extends TestCase
         @unlink($tmpFile);
     }
 
+    public function test_admin_dapat_import_jadwal_langsung_dari_file_explorer_tanpa_preview(): void
+    {
+        $admin = $this->admin();
+        $driver = $this->buatDriver('Teguh Setiawan', 'MTU2002', '3215010202920002', 'Trailer');
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['No', 'Nama Driver', 'NIP', 'NIK MTU', 'PROJECT', '10-Sep', '11-Sep'],
+            [1, 'Teguh Setiawan', 'MTU2002', '3215010202920002', 'Trailer', 'L', '1'],
+        ]);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'test_direct_') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tmpFile);
+
+        $uploaded = new UploadedFile($tmpFile, 'jadwal_direct.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+
+        // Eksekusi rute direct-import
+        $res = $this->actingAs($admin)->post(route('admin.jadwal-driver.direct-import'), [
+            'file_jadwal' => $uploaded,
+            'tahun' => 2026,
+            'bulan' => 9,
+        ]);
+
+        $res->assertRedirect(route('admin.jadwal-driver.index', ['tahun' => 2026, 'bulan' => 9]));
+        $res->assertSessionHas('success');
+
+        // Verifikasi batch dan data masuk
+        $this->assertDatabaseHas('jadwal_import_batch', [
+            'nama_file' => 'jadwal_direct.xlsx',
+            'periode_bulan' => '2026-09',
+            'total_driver' => 1,
+            'total_libur' => 1,
+            'total_kerja' => 1,
+        ]);
+
+        $this->assertDatabaseHas('jadwal_driver', [
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-10 00:00:00',
+            'status_jadwal' => 'libur',
+        ]);
+
+        @unlink($tmpFile);
+    }
+
+    public function test_rute_import_lama_mengarahkan_ke_halaman_utama(): void
+    {
+        $admin = $this->admin();
+        $res = $this->actingAs($admin)->get(route('admin.jadwal-driver.import'));
+        $res->assertRedirect(route('admin.jadwal-driver.index'));
+    }
+
     public function test_import_menandai_driver_tidak_dikenal_dan_dapat_diunduh_csv_laporan(): void
     {
         $admin = $this->admin();
