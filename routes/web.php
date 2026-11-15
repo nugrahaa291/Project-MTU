@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\PasswordController;
@@ -56,6 +57,63 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
     Route::middleware('password.diganti')->group(function () {
         // Mengarahkan ke dashboard yang sesuai peran
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+        /*
+        |----------------------------------------------------------------------
+        | Dashboard & Manajemen Administrator (Akses Penuh)
+        |----------------------------------------------------------------------
+        */
+        Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+            Route::get('/', Admin\DashboardController::class)->name('dashboard');
+
+            // Lowongan & Lamaran Masuk (Akses Penuh)
+            Route::resource('lowongan', Hrd\LowonganController::class);
+            Route::get('lamaran', [Hrd\LamaranController::class, 'index'])->name('lamaran.index');
+            Route::get('lamaran/{lamaran}', [Hrd\LamaranController::class, 'show'])->name('lamaran.show');
+            Route::get('lamaran/{lamaran}/dokumen/{jenis}', [Hrd\LamaranController::class, 'dokumen'])->name('lamaran.dokumen');
+            Route::post('lamaran/{lamaran}/proses', [Hrd\LamaranController::class, 'proses'])->name('lamaran.proses');
+            Route::post('lamaran/{lamaran}/terima', [Hrd\LamaranController::class, 'terima'])->name('lamaran.terima');
+            Route::post('lamaran/{lamaran}/tolak', [Hrd\LamaranController::class, 'tolak'])->name('lamaran.tolak');
+
+            // Karyawan (CRUD Penuh)
+            Route::resource('karyawan', Hrd\KaryawanController::class)->except('destroy');
+            Route::post('karyawan/{karyawan}/reset-password', [Hrd\KaryawanController::class, 'resetPassword'])->name('karyawan.reset-password');
+
+            // Absensi & Rekap
+            Route::get('absensi', [Hrd\AbsensiController::class, 'index'])->name('absensi.index');
+            Route::get('absensi/rekap', [Hrd\AbsensiController::class, 'rekap'])->name('absensi.rekap');
+            Route::post('absensi', [Hrd\AbsensiController::class, 'store'])->name('absensi.store');
+            Route::get('absensi/{absensi}/foto/{jenis}', [Hrd\AbsensiController::class, 'foto'])->name('absensi.foto');
+
+            // Data Master untuk Admin
+            Route::resource('jabatan', Hrd\JabatanController::class)->except('show');
+
+            // Jadwal Libur Driver (Operasional Cabang MTU)
+            Route::get('jadwal-driver', [Admin\JadwalDriverController::class, 'index'])->name('jadwal-driver.index');
+            Route::get('jadwal-driver/template', [Admin\JadwalDriverController::class, 'exportTemplate'])->name('jadwal-driver.template');
+            Route::get('jadwal-driver/import', [Admin\JadwalDriverController::class, 'importForm'])->name('jadwal-driver.import');
+            Route::post('jadwal-driver/preview', [Admin\JadwalDriverController::class, 'previewImport'])->name('jadwal-driver.preview');
+            Route::post('jadwal-driver/store-import', [Admin\JadwalDriverController::class, 'storeImport'])->name('jadwal-driver.store-import');
+            Route::get('jadwal-driver/download-invalid', [Admin\JadwalDriverController::class, 'downloadInvalidReport'])->name('jadwal-driver.download-invalid');
+            Route::post('jadwal-driver/manual', [Admin\JadwalDriverController::class, 'storeManual'])->name('jadwal-driver.manual');
+            Route::post('jadwal-driver/{jadwal}/pengganti', [Admin\JadwalDriverController::class, 'tentukanPengganti'])->name('jadwal-driver.pengganti');
+            Route::delete('jadwal-driver/{jadwal}', [Admin\JadwalDriverController::class, 'destroy'])->name('jadwal-driver.destroy');
+
+            // Kalender Kerja / Hari Libur (Admin mengelola Jadwal Driver)
+            Route::get('kalender', [Admin\JadwalDriverController::class, 'index'])->name('kalender.index');
+            Route::post('kalender', [Hrd\KalenderKerjaController::class, 'store'])->name('kalender.store');
+            Route::delete('kalender/{kalender}', [Hrd\KalenderKerjaController::class, 'destroy'])->name('kalender.destroy');
+
+            // Manajemen Pengguna
+            Route::resource('users', Admin\UserController::class)->except('show');
+            Route::post('users/{user}/toggle-status', [Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+            Route::post('users/{user}/reset-password', [Admin\UserController::class, 'resetPassword'])->name('users.reset-password');
+
+            // Monitoring Sistem (Dinonaktifkan aman sesuai instruksi) & Pengaturan Sistem
+            Route::get('monitoring', fn () => redirect()->route('admin.dashboard'))->name('monitoring');
+            Route::get('pengaturan', [Admin\PengaturanController::class, 'index'])->name('pengaturan');
+            Route::post('pengaturan', [Admin\PengaturanController::class, 'update'])->name('pengaturan.update');
+        });
 
         /*
         |----------------------------------------------------------------------

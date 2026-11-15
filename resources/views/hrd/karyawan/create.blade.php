@@ -2,7 +2,8 @@
 @section('judul', 'Tambah Karyawan')
 
 @section('content')
-    <form method="POST" action="{{ route('hrd.karyawan.store') }}" class="card max-w-3xl space-y-4 p-6">
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
+    <form method="POST" action="{{ route($rute.'.karyawan.store') }}" class="card max-w-3xl space-y-4 p-6">
         @csrf
         <p class="rounded-md bg-gray-50 p-3 text-sm text-gray-600">
             Untuk pegawai lama yang tidak melalui portal lamaran. Karyawan baru dari lamaran dibuat otomatis saat pelamar diterima.
@@ -23,7 +24,7 @@
         <x-field name="alamat" label="Alamat" as="textarea" rows="3" />
         <div class="flex gap-2">
             <button class="btn btn-primary">Simpan &amp; Buat Akun</button>
-            <a href="{{ route('hrd.karyawan.index') }}" class="btn btn-outline">Batal</a>
+            <a href="{{ route($rute.'.karyawan.index') }}" class="btn btn-outline">Batal</a>
         </div>
     </form>
 @endsection

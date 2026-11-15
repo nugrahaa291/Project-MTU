@@ -2,7 +2,8 @@
 @section('judul', 'Lowongan')
 
 @section('content')
-    <div class="mb-4 flex justify-end"><a href="{{ route('hrd.lowongan.create') }}" class="btn btn-primary">+ Buat Lowongan</a></div>
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
+    <div class="mb-4 flex justify-end"><a href="{{ route($rute.'.lowongan.create') }}" class="btn btn-primary">+ Buat Lowongan</a></div>
     <div class="table-wrap">
         <table class="table-base">
             <thead><tr><th>Lowongan</th><th>Periode</th><th>Kuota</th><th>Lamaran</th><th>Status</th><th></th></tr></thead>
@@ -16,8 +17,8 @@
                         <td>@php $label = $l->labelStatus(); @endphp
                             <x-badge :warna="$label === 'Dibuka' ? 'green' : ($label === 'Belum dibuka' ? 'blue' : 'slate')">{{ $label }}</x-badge></td>
                         <td class="space-x-2 text-right whitespace-nowrap">
-                            <a href="{{ route('hrd.lowongan.show', $l) }}" class="btn btn-outline btn-sm">Detail</a>
-                            <a href="{{ route('hrd.lowongan.edit', $l) }}" class="btn btn-outline btn-sm">Edit</a>
+                            <a href="{{ route($rute.'.lowongan.show', $l) }}" class="btn btn-outline btn-sm">Detail</a>
+                            <a href="{{ route($rute.'.lowongan.edit', $l) }}" class="btn btn-outline btn-sm">Edit</a>
                         </td>
                     </tr>
                 @empty

@@ -2,6 +2,7 @@
 @section('judul', 'Detail Lowongan')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <div class="card max-w-3xl space-y-4 p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -22,10 +23,10 @@
         <div><h3 class="font-bold">Persyaratan</h3><p class="whitespace-pre-line text-gray-700">{{ $lowongan->persyaratan ?: '-' }}</p></div>
 
         <div class="flex flex-wrap gap-2 border-t border-line pt-4">
-            <a href="{{ route('hrd.lamaran.index', ['lowongan_id' => $lowongan->id]) }}" class="btn btn-primary">Lihat Lamaran</a>
-            <a href="{{ route('hrd.lowongan.edit', $lowongan) }}" class="btn btn-outline">Edit</a>
+            <a href="{{ route($rute.'.lamaran.index', ['lowongan_id' => $lowongan->id]) }}" class="btn btn-primary">Lihat Lamaran</a>
+            <a href="{{ route($rute.'.lowongan.edit', $lowongan) }}" class="btn btn-outline">Edit</a>
             <a href="{{ route('lowongan.show', $lowongan) }}" target="_blank" class="btn btn-outline">Lihat di Portal</a>
-            <form method="POST" action="{{ route('hrd.lowongan.destroy', $lowongan) }}" data-konfirmasi="Hapus lowongan ini?">
+            <form method="POST" action="{{ route($rute.'.lowongan.destroy', $lowongan) }}" data-konfirmasi="Hapus lowongan ini?">
                 @csrf @method('DELETE')<button class="btn btn-danger">Hapus</button>
             </form>
         </div>

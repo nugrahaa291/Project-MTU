@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Table('karyawan')]
 #[Fillable([
-    'user_id', 'lamaran_id', 'jabatan_id', 'nip', 'nik', 'nama', 'no_hp', 'alamat',
+    'user_id', 'lamaran_id', 'jabatan_id', 'proyek', 'nip', 'nik', 'nama', 'no_hp', 'alamat',
     'tanggal_masuk', 'tanggal_keluar', 'aktif',
 ])]
 class Karyawan extends Model
@@ -43,6 +43,21 @@ class Karyawan extends Model
     public function absensi(): HasMany
     {
         return $this->hasMany(Absensi::class);
+    }
+
+    public function jadwalDriver(): HasMany
+    {
+        return $this->hasMany(JadwalDriver::class, 'karyawan_id');
+    }
+
+    public function jadwalLibur(): HasMany
+    {
+        return $this->hasMany(JadwalDriver::class, 'karyawan_id')->where('status_jadwal', 'libur');
+    }
+
+    public function penugasanPengganti(): HasMany
+    {
+        return $this->hasMany(JadwalDriver::class, 'driver_pengganti_id');
     }
 
     public function scopeAktif(Builder $query): Builder

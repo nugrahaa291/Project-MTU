@@ -2,6 +2,7 @@
 @section('judul', 'Detail Karyawan')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     {{-- Password sementara hanya tampil SEKALI (flash), tidak disimpan di mana pun dalam bentuk asli --}}
     @if (session('password_sementara'))
         <div class="mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
@@ -35,19 +36,21 @@
                 <div class="sm:col-span-2"><dt class="text-gray-500">Alamat</dt><dd class="font-medium">{{ $karyawan->alamat ?: '-' }}</dd></div>
                 @if ($karyawan->lamaran)
                     <div class="sm:col-span-2"><dt class="text-gray-500">Asal lamaran</dt>
-                        <dd><a class="font-medium text-brand" href="{{ route('hrd.lamaran.show', $karyawan->lamaran) }}">{{ $karyawan->lamaran->kode }} - {{ $karyawan->lamaran->lowongan->judul }}</a></dd></div>
+                        <dd><a class="font-medium text-brand" href="{{ route($rute.'.lamaran.show', $karyawan->lamaran) }}">{{ $karyawan->lamaran->kode }} - {{ $karyawan->lamaran->lowongan->judul }}</a></dd></div>
                 @endif
                 <div><dt class="text-gray-500">Status password</dt>
                     <dd class="font-medium">{{ $karyawan->user->must_change_password ? 'Masih sementara' : 'Sudah diganti karyawan' }}</dd></div>
             </dl>
 
-            <div class="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
-                <a href="{{ route('hrd.karyawan.edit', $karyawan) }}" class="btn btn-outline">Edit</a>
-                <form method="POST" action="{{ route('hrd.karyawan.reset-password', $karyawan) }}"
-                      data-konfirmasi="Reset password? Password lama tidak berlaku lagi dan perangkat mobile akan keluar.">
-                    @csrf<button class="btn btn-dark">Reset Password</button>
-                </form>
-            </div>
+            @if (auth()->user()?->isAdmin())
+                <div class="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
+                    <a href="{{ route($rute.'.karyawan.edit', $karyawan) }}" class="btn btn-outline">Edit</a>
+                    <form method="POST" action="{{ route($rute.'.karyawan.reset-password', $karyawan) }}"
+                          data-konfirmasi="Reset password? Password lama tidak berlaku lagi dan perangkat mobile akan keluar.">
+                        @csrf<button class="btn btn-dark">Reset Password</button>
+                    </form>
+                </div>
+            @endif
         </div>
 
         <div class="card p-6">

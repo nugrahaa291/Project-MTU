@@ -10,6 +10,12 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): RedirectResponse
     {
-        return redirect()->route($request->user()->isHrd() ? 'hrd.dashboard' : 'karyawan.beranda');
+        $user = $request->user();
+
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route($user->isHrd() ? 'hrd.dashboard' : 'karyawan.beranda');
     }
 }

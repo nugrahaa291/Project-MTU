@@ -2,8 +2,9 @@
 @section('judul', $jabatan->exists ? 'Edit Jabatan' : 'Tambah Jabatan')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <form method="POST" class="card max-w-xl space-y-4 p-6"
-          action="{{ $jabatan->exists ? route('hrd.jabatan.update', $jabatan) : route('hrd.jabatan.store') }}">
+          action="{{ $jabatan->exists ? route($rute.'.jabatan.update', $jabatan) : route($rute.'.jabatan.store') }}">
         @csrf
         @if ($jabatan->exists) @method('PUT') @endif
 
@@ -16,7 +17,7 @@
 
         <div class="flex gap-2">
             <button class="btn btn-primary">Simpan</button>
-            <a href="{{ route('hrd.jabatan.index') }}" class="btn btn-outline">Batal</a>
+            <a href="{{ route($rute.'.jabatan.index') }}" class="btn btn-outline">Batal</a>
         </div>
     </form>
 @endsection

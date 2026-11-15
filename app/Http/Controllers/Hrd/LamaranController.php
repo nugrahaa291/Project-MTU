@@ -96,8 +96,10 @@ class LamaranController extends Controller
                 $lamaran, $data['email'], $data['tanggal_masuk'], $data['catatan'] ?? null,
             );
 
+            $rute = request()->routeIs('admin.*') ? 'admin.karyawan.show' : 'hrd.karyawan.show';
+
             // flash() = hanya tersedia untuk SATU permintaan berikutnya, lalu hilang.
-            return redirect()->route('hrd.karyawan.show', $karyawan)
+            return redirect()->route($rute, $karyawan)
                 ->with('success', 'Pelamar diterima dan akun karyawan berhasil dibuat.')
                 ->with('password_sementara', $password);
         });

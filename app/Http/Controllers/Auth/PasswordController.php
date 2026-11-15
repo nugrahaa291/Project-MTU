@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -28,6 +29,8 @@ class PasswordController extends Controller
         $user = $request->user();
         $user->password = $request->password;
         $user->forceFill(['must_change_password' => false])->save();
+
+        ActivityLog::catat($user, 'ganti_password', 'Pengguna memperbarui kata sandi akun');
 
         return redirect()->route('dashboard')->with('success', 'Password berhasil diganti.');
     }

@@ -2,6 +2,7 @@
 @section('judul', 'Karyawan')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <form method="GET" class="flex gap-2">
             <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIP / NIK" class="input w-64">
@@ -12,7 +13,9 @@
             </select>
             <button class="btn btn-dark">Cari</button>
         </form>
-        <a href="{{ route('hrd.karyawan.create') }}" class="btn btn-primary">+ Tambah Karyawan</a>
+        @if (auth()->user()?->isAdmin())
+            <a href="{{ route($rute.'.karyawan.create') }}" class="btn btn-primary">+ Tambah Karyawan</a>
+        @endif
     </div>
 
     <div class="table-wrap">
@@ -26,7 +29,7 @@
                         <td>{{ $k->jabatan->nama }}</td>
                         <td class="whitespace-nowrap text-gray-600">{{ $k->tanggal_masuk->format('d/m/Y') }}</td>
                         <td><x-badge :warna="$k->aktif ? 'green' : 'slate'">{{ $k->aktif ? 'Aktif' : 'Nonaktif' }}</x-badge></td>
-                        <td class="text-right"><a href="{{ route('hrd.karyawan.show', $k) }}" class="btn btn-outline btn-sm">Detail</a></td>
+                        <td class="text-right"><a href="{{ route($rute.'.karyawan.show', $k) }}" class="btn btn-outline btn-sm">Detail</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="py-8 text-center text-gray-500">Belum ada karyawan.</td></tr>

@@ -2,7 +2,8 @@
 @section('judul', 'Edit Karyawan')
 
 @section('content')
-    <form method="POST" action="{{ route('hrd.karyawan.update', $karyawan) }}" class="card max-w-3xl space-y-4 p-6">
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
+    <form method="POST" action="{{ route($rute.'.karyawan.update', $karyawan) }}" class="card max-w-3xl space-y-4 p-6">
         @csrf @method('PUT')
         <div class="grid gap-4 sm:grid-cols-2">
             <x-field name="nama" label="Nama Lengkap" :value="$karyawan->nama" required />
@@ -26,7 +27,7 @@
 
         <div class="flex gap-2">
             <button class="btn btn-primary">Simpan</button>
-            <a href="{{ route('hrd.karyawan.show', $karyawan) }}" class="btn btn-outline">Batal</a>
+            <a href="{{ route($rute.'.karyawan.show', $karyawan) }}" class="btn btn-outline">Batal</a>
         </div>
     </form>
 @endsection

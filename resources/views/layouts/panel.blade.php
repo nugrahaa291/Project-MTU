@@ -12,18 +12,26 @@
 <body>
 @php
     $user = auth()->user();
+    $menuAdmin = [
+        ['admin.dashboard', 'Dashboard', 'admin.dashboard'],
+        ['admin.lowongan.index', 'Lowongan', 'admin.lowongan.*'],
+        ['admin.lamaran.index', 'Lamaran Masuk', 'admin.lamaran.*'],
+        ['admin.karyawan.index', 'Karyawan', 'admin.karyawan.*'],
+        ['admin.absensi.index', 'Absensi', 'admin.absensi.index'],
+        ['admin.absensi.rekap', 'Rekap Absensi', 'admin.absensi.rekap'],
+        ['admin.jabatan.index', 'Jabatan', 'admin.jabatan.*'],
+        ['admin.jadwal-driver.index', 'Jadwal Libur Driver', 'admin.jadwal-driver.*'],
+        ['admin.users.index', 'Manajemen Pengguna', 'admin.users.*'],
+        ['admin.pengaturan', 'Pengaturan Sistem', 'admin.pengaturan'],
+    ];
     $menuHrd = [
         ['hrd.dashboard', 'Dashboard', 'hrd.dashboard'],
         ['hrd.lowongan.index', 'Lowongan', 'hrd.lowongan.*'],
         ['hrd.lamaran.index', 'Lamaran Masuk', 'hrd.lamaran.*'],
         ['hrd.karyawan.index', 'Karyawan', 'hrd.karyawan.*'],
-        ['hrd.absensi.index', 'Absensi', 'hrd.absensi.index'],
-        ['hrd.absensi.rekap', 'Rekap Absensi', 'hrd.absensi.rekap'],
-        ['hrd.kalender.index', 'Hari Libur', 'hrd.kalender.*'],
-        ['hrd.jabatan.index', 'Jabatan', 'hrd.jabatan.*'],
     ];
     $menuKaryawan = [['karyawan.beranda', 'Absensi Saya', 'karyawan.*']];
-    $menu = $user->isHrd() ? $menuHrd : $menuKaryawan;
+    $menu = $user->isAdmin() ? $menuAdmin : ($user->isHrd() ? $menuHrd : $menuKaryawan);
 @endphp
 
 <div class="min-h-screen lg:flex">

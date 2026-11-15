@@ -42,8 +42,18 @@ class User extends Authenticatable
         return $this->hasOne(Karyawan::class);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
+    }
+
     public function isHrd(): bool
     {
         return $this->role === Role::Hrd;
+    }
+
+    public function isKaryawan(): bool
+    {
+        return $this->role === Role::Karyawan;
     }
 }

@@ -73,12 +73,17 @@ class AkunTest extends TestCase
 
     public function test_reset_password_membuat_password_baru_dan_mencabut_token(): void
     {
+        $admin = $this->admin();
         $hrd = $this->hrd();
         $karyawan = $this->karyawan();
         $karyawan->user->createToken('hp-lama');
 
-        $this->actingAs($hrd)->post(route('hrd.karyawan.reset-password', $karyawan))
-            ->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('password_sementara');
+        // HRD ditolak saat mereset password
+        $this->actingAs($hrd)->post(route('hrd.karyawan.reset-password', $karyawan))->assertForbidden();
+
+        // Admin berhasil mereset password
+        $this->actingAs($admin)->post(route('admin.karyawan.reset-password', $karyawan))
+            ->assertRedirect(route('admin.karyawan.show', $karyawan))->assertSessionHas('password_sementara');
 
         $user = $karyawan->user->fresh();
         $this->assertTrue($user->must_change_password);
@@ -87,12 +92,20 @@ class AkunTest extends TestCase
         $this->assertFalse(\Hash::check('RahasiaBaru1', $user->password));
     }
 
-    public function test_hrd_bisa_menambah_karyawan_manual(): void
+    public function test_admin_bisa_menambah_karyawan_manual_dan_hrd_dilarang(): void
     {
+        $admin = $this->admin();
         $hrd = $this->hrd();
         $jabatan = \App\Models\Jabatan::create(['nama' => 'Driver', 'aktif' => true]);
 
+        // HRD dilarang menambah karyawan (View Only)
         $this->actingAs($hrd)->post(route('hrd.karyawan.store'), [
+            'nama' => 'Agus Salim', 'email' => 'agus@example.com', 'nik' => '3215030303900001',
+            'no_hp' => '+6281234500001', 'jabatan_id' => $jabatan->id, 'tanggal_masuk' => '2026-10-01',
+        ])->assertForbidden();
+
+        // Admin berhasil menambah karyawan
+        $this->actingAs($admin)->post(route('admin.karyawan.store'), [
             'nama' => 'Agus Salim', 'email' => 'agus@example.com', 'nik' => '3215030303900001',
             'no_hp' => '+6281234500001', 'jabatan_id' => $jabatan->id, 'tanggal_masuk' => '2026-10-01',
         ])->assertSessionHas('password_sementara');
@@ -101,7 +114,7 @@ class AkunTest extends TestCase
         $this->assertTrue(User::where('email', 'agus@example.com')->firstOrFail()->must_change_password);
 
         // NIK ganda ditolak
-        $this->actingAs($hrd)->post(route('hrd.karyawan.store'), [
+        $this->actingAs($admin)->post(route('admin.karyawan.store'), [
             'nama' => 'Agus Dua', 'email' => 'agus2@example.com', 'nik' => '3215030303900001',
             'no_hp' => '081234500002', 'jabatan_id' => $jabatan->id, 'tanggal_masuk' => '2026-10-01',
         ])->assertSessionHasErrors('nik');
