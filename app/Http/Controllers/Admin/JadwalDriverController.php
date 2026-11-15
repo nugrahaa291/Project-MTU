@@ -30,8 +30,17 @@ class JadwalDriverController extends Controller
     public function index(Request $request, JadwalDriverService $service): View
     {
         $sekarang = CarbonImmutable::now(config('absensi.timezone', 'Asia/Jakarta'));
-        $tahun = (int) $request->input('tahun', $sekarang->year);
-        $bulan = (int) $request->input('bulan', $sekarang->month);
+        $tanggalPilihan = $request->input('tanggal');
+
+        if (! empty($tanggalPilihan) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalPilihan)) {
+            $carbonTgl = CarbonImmutable::parse($tanggalPilihan);
+            $tahun = (int) $request->input('tahun', $carbonTgl->year);
+            $bulan = (int) $request->input('bulan', $carbonTgl->month);
+        } else {
+            $tanggalPilihan = null;
+            $tahun = (int) $request->input('tahun', $sekarang->year);
+            $bulan = (int) $request->input('bulan', $sekarang->month);
+        }
 
         $tanggalMulai = $request->input('tanggal_mulai', $request->input('start_date'));
         $tanggalAkhir = $request->input('tanggal_akhir', $request->input('end_date'));
@@ -39,23 +48,24 @@ class JadwalDriverController extends Controller
         $filter = [
             'cari' => trim((string) $request->input('cari', $request->input('q', ''))),
             'proyek' => $request->input('proyek'),
-            'status' => $request->input('status'),
+            'tanggal' => $tanggalPilihan,
             'tanggal_mulai' => $tanggalMulai,
             'tanggal_akhir' => $tanggalAkhir,
         ];
 
-        // 1. Data Kalender Bulanan (untuk modal kalender)
+        // 1. Data Kalender Bulanan (untuk kalender inline)
         $kalender = $service->ambilKalenderBulanan($tahun, $bulan, [
             'cari' => $filter['cari'],
             'proyek' => $filter['proyek'],
-            'status' => $filter['status'],
         ]);
 
         // 2. Data Tabel Jadwal Driver
         $tabelQuery = JadwalDriver::with(['karyawan.jabatan', 'driverPengganti']);
 
-        // Filter rentang tanggal fleksibel
-        if (! empty($tanggalMulai) && ! empty($tanggalAkhir)) {
+        if (! empty($tanggalPilihan)) {
+            // Ketika tanggal diklik pada kalender, langsung filter jadwal tanggal tersebut
+            $tabelQuery->whereDate('tanggal', $tanggalPilihan);
+        } elseif (! empty($tanggalMulai) && ! empty($tanggalAkhir)) {
             $tabelQuery->whereDate('tanggal', '>=', $tanggalMulai)
                 ->whereDate('tanggal', '<=', $tanggalAkhir);
         } elseif (! empty($tanggalMulai)) {
@@ -81,17 +91,14 @@ class JadwalDriverController extends Controller
             $tabelQuery->where('proyek', $filter['proyek']);
         }
 
-        if (! empty($filter['status'])) {
-            $tabelQuery->where('status_jadwal', $filter['status']);
+        if ($request->filled('status')) {
+            $tabelQuery->where('status_jadwal', $request->input('status'));
         }
 
         $daftarJadwalTabel = $tabelQuery->orderBy('tanggal')
             ->orderBy('id')
             ->paginate(25)
             ->withQueryString();
-
-        // Cek apakah kalender dibuka otomatis via query (misal navigasi bulan atau ?view=kalender)
-        $bukaKalender = $request->input('view') === 'kalender' || $request->boolean('kalender');
 
         // Ambil daftar proyek unik dan seluruh driver aktif untuk form manual
         $daftarProyek = Karyawan::whereNotNull('proyek')->distinct()->pluck('proyek')->filter()->values()->all();
@@ -108,7 +115,7 @@ class JadwalDriverController extends Controller
             'tahun',
             'bulan',
             'filter',
-            'bukaKalender',
+            'tanggalPilihan',
             'daftarProyek',
             'semuaDriver',
             'batchTerbaru'

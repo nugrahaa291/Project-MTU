@@ -126,17 +126,114 @@ class JadwalDriverTest extends TestCase
         $res->assertSee('Ahmad Fauzi');
         $res->assertSee('MTU2004');
 
-        // Cek Kalender Bulanan memiliki 7 kolom hari horizontal
-        $res->assertSee('Senin');
-        $res->assertSee('Selasa');
-        $res->assertSee('Rabu');
-        $res->assertSee('Kamis');
-        $res->assertSee('Jumat');
-        $res->assertSee('Sabtu');
-        $res->assertSee('Minggu');
+        // Cek Kalender Bulanan memiliki 7 kolom hari horizontal compact (Sen - Min)
+        $res->assertSee('Sen');
+        $res->assertSee('Sel');
+        $res->assertSee('Rab');
+        $res->assertSee('Kam');
+        $res->assertSee('Jum');
+        $res->assertSee('Sab');
+        $res->assertSee('Min');
 
         // Pastikan tab toggle lama tidak ada
         $res->assertDontSee('role="group"', false);
+
+        // Pastikan kalender berada di halaman (inline) bukan modal dialog kalender
+        $res->assertSee('id="sectionKalender"', false);
+        $res->assertDontSee('<dialog id="modalKalender"', false);
+
+        // Pastikan input filter lama (tanggal_mulai, tanggal_akhir, status) tidak ada di UI
+        $res->assertDontSee('Tanggal Mulai</label>', false);
+        $res->assertDontSee('Tanggal Akhir</label>', false);
+        $res->assertDontSee('Semua Status', false);
+    }
+
+    public function test_klik_tanggal_di_kalender_langsung_memfilter_tabel(): void
+    {
+        $admin = $this->admin();
+        $driver1 = $this->buatDriver('Diki Maulana', 'MTU2001', '3215010101900001', 'Wingbox');
+        $driver2 = $this->buatDriver('Teguh Setiawan', 'MTU2002', '3215010202920002', 'Trailer');
+
+        // Driver 1 libur 15 Sep 2026
+        JadwalDriver::create([
+            'karyawan_id' => $driver1->id,
+            'tanggal' => '2026-09-15',
+            'status_jadwal' => 'libur',
+            'sumber' => 'import_pusat',
+            'proyek' => 'Wingbox',
+            'keterangan' => 'Libur 15 Sep',
+        ]);
+
+        // Driver 2 libur 20 Sep 2026
+        JadwalDriver::create([
+            'karyawan_id' => $driver2->id,
+            'tanggal' => '2026-09-20',
+            'status_jadwal' => 'libur',
+            'sumber' => 'manual_cabang',
+            'proyek' => 'Trailer',
+            'keterangan' => 'Libur 20 Sep',
+        ]);
+
+        // 1. Klik tanggal 15 Sep 2026: Hanya Diki Maulana muncul, jadwal 20 Sep tidak muncul
+        $res15 = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
+            'tahun' => 2026,
+            'bulan' => 9,
+            'tanggal' => '2026-09-15',
+        ]));
+        $res15->assertOk();
+        $res15->assertSee('Diki Maulana');
+        $res15->assertSee('MTU2001');
+        $res15->assertSee('Libur 15 Sep');
+        $res15->assertDontSee('Libur 20 Sep');
+        $this->assertCount(1, $res15->viewData('daftarJadwalTabel'));
+        $this->assertSame('Diki Maulana', $res15->viewData('daftarJadwalTabel')->first()->karyawan->nama);
+
+        // 2. Klik tanggal tanpa driver libur (misal 16 Sep 2026): tampilkan empty state sesuai ketentuan
+        $res16 = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
+            'tahun' => 2026,
+            'bulan' => 9,
+            'tanggal' => '2026-09-16',
+        ]));
+        $res16->assertOk();
+        $res16->assertSee('Tidak ada driver libur pada tanggal ini.');
+        $this->assertCount(0, $res16->viewData('daftarJadwalTabel'));
+    }
+
+    public function test_kombinasi_filter_tanggal_dan_proyek(): void
+    {
+        $admin = $this->admin();
+        $driverWingbox = $this->buatDriver('Diki Maulana', 'MTU2001', '3215010101900001', 'Wingbox');
+        $driverTrailer = $this->buatDriver('Teguh Setiawan', 'MTU2002', '3215010202920002', 'Trailer');
+
+        // Kedua driver libur pada tanggal yang sama: 15 Sep 2026
+        JadwalDriver::create([
+            'karyawan_id' => $driverWingbox->id,
+            'tanggal' => '2026-09-15',
+            'status_jadwal' => 'libur',
+            'proyek' => 'Wingbox',
+            'keterangan' => 'Libur Wingbox',
+        ]);
+        JadwalDriver::create([
+            'karyawan_id' => $driverTrailer->id,
+            'tanggal' => '2026-09-15',
+            'status_jadwal' => 'libur',
+            'proyek' => 'Trailer',
+            'keterangan' => 'Libur Trailer',
+        ]);
+
+        // Filter: Tanggal 15 Sep 2026 + Proyek Wingbox = hanya driver Wingbox yang muncul
+        $res = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
+            'tahun' => 2026,
+            'bulan' => 9,
+            'tanggal' => '2026-09-15',
+            'proyek' => 'Wingbox',
+        ]));
+        $res->assertOk();
+        $res->assertSee('Diki Maulana');
+        $res->assertSee('Libur Wingbox');
+        $res->assertDontSee('Libur Trailer');
+        $this->assertCount(1, $res->viewData('daftarJadwalTabel'));
+        $this->assertSame('Wingbox', $res->viewData('daftarJadwalTabel')->first()->proyek);
     }
 
     public function test_filter_rentang_tanggal_bekerja_pada_tabel_jadwal(): void
