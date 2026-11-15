@@ -31,15 +31,9 @@
                 <button type="button"
                         onclick="toggleKalenderDropdown(event)"
                         id="btnToggleKalender"
-                        class="btn btn-outline btn-sm whitespace-nowrap flex items-center gap-1.5 {{ !empty($tanggalPilihan) ? 'border-brand text-brand bg-orange-50 font-semibold' : '' }}"
+                        class="btn btn-outline btn-sm whitespace-nowrap {{ !empty($tanggalPilihan) ? 'border-brand text-brand bg-orange-50 font-semibold' : '' }}"
                         title="Buka kalender compact bulanan">
-                    <span>📅 Kalender</span>
-                    @if (!empty($tanggalPilihan))
-                        <span class="rounded bg-brand text-white text-[10px] px-1.5 py-0.2 font-bold leading-none">
-                            {{ \Carbon\CarbonImmutable::parse($tanggalPilihan)->translatedFormat('d M') }}
-                        </span>
-                    @endif
-                    <span class="text-[10px] text-gray-400">&or;</span>
+                    📅 Kalender
                 </button>
 
                 {{-- KALENDER COMPACT NIMPA TABEL (POPUP DATEPICKER ~310px) --}}
