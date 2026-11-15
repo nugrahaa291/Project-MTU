@@ -99,17 +99,17 @@
         <table class="table-base">
             <thead>
                 <tr>
-                    <th class="w-12 text-center">No</th>
-                    <th>Nama Driver</th>
-                    <th>NIP</th>
-                    <th>NIK MTU</th>
-                    <th>Proyek</th>
-                    <th>Tanggal Libur</th>
-                    <th class="text-center">Status</th>
-                    <th>Driver Pengganti</th>
-                    <th>Sumber Jadwal</th>
-                    <th>Keterangan</th>
-                    <th class="text-right">Aksi</th>
+                    <th class="w-12 text-center whitespace-nowrap">No</th>
+                    <th class="whitespace-nowrap">Nama Driver</th>
+                    <th class="whitespace-nowrap">NIP</th>
+                    <th class="whitespace-nowrap">NIK MTU</th>
+                    <th class="whitespace-nowrap">Proyek</th>
+                    <th class="whitespace-nowrap">Tanggal Libur</th>
+                    <th class="text-center whitespace-nowrap">Status</th>
+                    <th class="whitespace-nowrap">Driver Pengganti</th>
+                    <th class="whitespace-nowrap">Sumber Jadwal</th>
+                    <th class="whitespace-nowrap">Keterangan</th>
+                    <th class="text-right whitespace-nowrap">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -118,17 +118,17 @@
                         <td class="text-center text-xs text-gray-400 font-mono">
                             {{ $daftarJadwalTabel->firstItem() + $idx }}
                         </td>
-                        <td>
+                        <td class="whitespace-nowrap">
                             <p class="font-semibold text-gray-900">{{ $j->karyawan?->nama }}</p>
                             <p class="text-[11px] text-gray-400">{{ $j->karyawan?->jabatan?->nama ?? 'Driver' }}</p>
                         </td>
-                        <td>
+                        <td class="whitespace-nowrap">
                             <span class="font-mono text-xs text-gray-700 font-medium">{{ $j->karyawan?->nip ?? '-' }}</span>
                         </td>
-                        <td>
+                        <td class="whitespace-nowrap">
                             <span class="font-mono text-xs text-gray-600">{{ $j->karyawan?->nik ?? '-' }}</span>
                         </td>
-                        <td>
+                        <td class="whitespace-nowrap">
                             <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
                                 {{ $j->proyek ?? 'Operasional MTU' }}
                             </span>
@@ -137,11 +137,11 @@
                             {{ $j->tanggal->translatedFormat('d M Y') }}
                         </td>
                         <td class="text-center whitespace-nowrap">
-                            <span class="rounded px-2 py-0.5 text-xs font-semibold {{ $j->status_jadwal === 'libur' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
+                            <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $j->status_jadwal === 'libur' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }}">
                                 {{ ucfirst($j->status_jadwal) }}
                             </span>
                         </td>
-                        <td>
+                        <td class="whitespace-nowrap">
                             @if ($j->driverPengganti)
                                 <p class="text-xs font-semibold text-gray-900">{{ $j->driverPengganti->nama }}</p>
                                 <p class="font-mono text-[10px] text-gray-400">NIP: {{ $j->driverPengganti->nip ?? $j->driverPengganti->nik }}</p>
@@ -149,10 +149,18 @@
                                 <span class="text-xs text-gray-400 italic">Tidak ada pengganti</span>
                             @endif
                         </td>
-                        <td>
-                            <span class="rounded px-2 py-0.5 text-[11px] font-semibold {{ $j->sumber === 'import_pusat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200' }}">
-                                {{ $j->sumber === 'import_pusat' ? 'Import Pusat' : 'Manual Cabang' }}
-                            </span>
+                        <td class="whitespace-nowrap">
+                            @if ($j->sumber === 'import_pusat')
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 whitespace-nowrap">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                                    Import Kantor Pusat
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200 whitespace-nowrap">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-brand"></span>
+                                    Manual Cabang
+                                </span>
+                            @endif
                         </td>
                         <td class="text-xs text-gray-600 max-w-xs truncate" title="{{ $j->keterangan }}">
                             {{ $j->keterangan ?? '-' }}
@@ -197,124 +205,118 @@
         </div>
     </div>
 
-    {{-- MODAL BESAR: KALENDER BULANAN KONVENSIONAL --}}
-    <dialog id="modalKalender" class="modal rounded-2xl p-0 backdrop:bg-black/60 shadow-2xl max-w-4xl w-full mx-auto my-auto overflow-hidden">
-        <div class="flex flex-col max-h-[90vh]">
-            {{-- Header Modal & Navigasi Bulan --}}
+    {{-- MODAL KALENDER BERSIH (2-KOLOM SEJAJAR TERINSPIRASI DARI HALAMAN HARI LIBUR) --}}
+    <dialog id="modalKalender" class="modal rounded-2xl p-0 backdrop:bg-black/60 shadow-2xl max-w-5xl w-full mx-auto my-auto overflow-hidden">
+        <div class="flex flex-col">
+            {{-- Header Modal --}}
             @php
                 $currDate = \Carbon\CarbonImmutable::createFromDate($tahun, $bulan, 1);
                 $prevDate = $currDate->subMonth();
                 $nextDate = $currDate->addMonth();
             @endphp
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white p-5">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <span>📅 Kalender Libur Driver</span>
-                    </h3>
-                    <p class="text-xs text-gray-500">Kalender bulanan 7 kolom konvensional (Senin - Minggu). Titik merah menandakan driver libur.</p>
+            <div class="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <h3 class="text-base font-bold text-gray-900">Kalender Libur Driver</h3>
+                    <span class="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                        {{ $currDate->translatedFormat('F Y') }}
+                    </span>
                 </div>
 
-                {{-- Navigasi Bulan & Tahun --}}
+                {{-- Navigasi Bulan & Tutup --}}
                 <div class="flex items-center gap-2">
                     <a href="{{ route('admin.jadwal-driver.index', array_merge(request()->except(['tahun', 'bulan', 'kalender']), ['tahun' => $prevDate->year, 'bulan' => $prevDate->month, 'kalender' => 1])) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Sebelumnya">
                         &larr;
                     </a>
-                    <span class="text-sm font-bold text-gray-800 min-w-36 text-center px-2 py-1 bg-gray-50 rounded border border-gray-200">
-                        {{ $currDate->translatedFormat('F Y') }}
-                    </span>
                     <a href="{{ route('admin.jadwal-driver.index', array_merge(request()->except(['tahun', 'bulan', 'kalender']), ['tahun' => $nextDate->year, 'bulan' => $nextDate->month, 'kalender' => 1])) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Berikutnya">
                         &rarr;
                     </a>
-                    <button type="button" onclick="document.getElementById('modalKalender').close()" class="btn btn-outline btn-sm ml-2">✕ Tutup</button>
+                    <button type="button" onclick="tutupModalKalender()" class="btn btn-outline btn-sm ml-2">✕ Tutup</button>
                 </div>
             </div>
 
-            {{-- Legend & Info --}}
-            <div class="bg-gray-50/80 px-5 py-2.5 border-b border-gray-100 flex flex-wrap items-center justify-between text-xs text-gray-600 gap-2">
-                <div class="flex items-center gap-4">
-                    <span class="inline-flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> <strong>Titik Merah:</strong> Ada driver libur
-                    </span>
-                    <span class="inline-flex items-center gap-1.5">
-                        <span class="w-3.5 h-3.5 rounded border-2 border-brand bg-brand/10"></span> Hari Ini
-                    </span>
-                </div>
-                <div class="text-xs text-gray-500">
-                    Total driver libur bulan ini: <strong class="text-gray-900">{{ $kalender['total_driver_libur_bulan_ini'] }} hari kerja</strong>
-                </div>
-            </div>
-
-            {{-- Body Modal: Grid Kalender 7 Kolom Horizontal --}}
-            <div class="p-5 overflow-y-auto space-y-4">
-                <div class="w-full border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
-                    {{-- Nama Hari Horizontal (Urutan: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu) --}}
-                    <div class="grid grid-cols-7 bg-gray-100 text-center text-xs font-bold text-gray-700 border-b border-gray-200">
-                        <div class="py-2.5 px-1 truncate">Senin</div>
-                        <div class="py-2.5 px-1 truncate">Selasa</div>
-                        <div class="py-2.5 px-1 truncate">Rabu</div>
-                        <div class="py-2.5 px-1 truncate">Kamis</div>
-                        <div class="py-2.5 px-1 truncate">Jumat</div>
-                        <div class="py-2.5 px-1 truncate text-amber-600">Sabtu</div>
-                        <div class="py-2.5 px-1 truncate text-rose-600">Minggu</div>
-                    </div>
-
-                    {{-- Grid Tanggal Bulanan (7 Kolom x 5/6 Baris) --}}
-                    <div class="grid grid-cols-7 divide-x divide-y divide-gray-200 bg-gray-50">
-                        @foreach ($kalender['daftar_hari'] as $hari)
-                            @if (! $hari['apakah_bulan_ini'])
-                                <div class="min-h-[72px] sm:min-h-[85px] bg-gray-100/50 p-2"></div>
-                            @else
-                                @php
-                                    $isToday = $hari['apakah_hari_ini'];
-                                    $hasOff = $hari['ada_driver_libur'];
-                                    $offCount = $hari['jumlah_driver_libur'];
-                                    $tglStr = $hari['tanggal'];
-                                @endphp
-                                <div onclick="pilihTanggalKalender('{{ $tglStr }}', {{ json_encode($hari['daftar_driver_libur']) }})"
-                                     class="cell-tanggal min-h-[72px] sm:min-h-[85px] p-2 transition cursor-pointer hover:bg-orange-50/60 relative flex flex-col justify-between {{ $isToday ? 'bg-orange-50/40 ring-2 ring-inset ring-brand' : 'bg-white' }}"
-                                     data-tanggal="{{ $tglStr }}"
-                                     title="Klik untuk melihat rincian driver libur tanggal {{ $tglStr }}">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-bold {{ $isToday ? 'rounded-full bg-brand text-white w-5 h-5 flex items-center justify-center text-[11px]' : 'text-gray-800' }}">
-                                            {{ $hari['nomor_hari'] }}
-                                        </span>
-                                        @if ($isToday)
-                                            <span class="text-[9px] uppercase font-bold text-brand tracking-tighter hidden sm:inline">Hari Ini</span>
-                                        @endif
-                                    </div>
-
-                                    {{-- Indikator Titik Merah & Ringkasan Driver Libur --}}
-                                    @if ($hasOff)
-                                        <div class="mt-1">
-                                            <div class="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200 shadow-xs">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                                <span>{{ $offCount }} Libur</span>
-                                            </div>
-                                            <p class="text-[10px] text-gray-500 mt-0.5 truncate hidden sm:block">
-                                                {{ $hari['daftar_driver_libur'][0]['nama'] }}
-                                                @if ($offCount > 1) +{{ $offCount - 1 }} lainnya @endif
-                                            </p>
-                                        </div>
-                                    @else
-                                        <div class="mt-1 text-[10px] text-gray-300 hidden sm:block">Normal</div>
-                                    @endif
-                                </div>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Panel Detail Tanggal yang Diklik (Di Bawah Kalender, Terintegrasi & Scrollable) --}}
-                <div id="panelDetailTanggalKalender" class="rounded-xl border border-gray-200 bg-gray-50/70 p-4 transition">
-                    <div class="flex flex-wrap items-center justify-between mb-3 border-b border-gray-200 pb-2 gap-2">
-                        <div>
-                            <h4 class="text-sm font-bold text-gray-900" id="kalenderDetailJudul">Rincian Driver Libur</h4>
-                            <p class="text-xs text-gray-500" id="kalenderDetailSubjudul">Klik kotak tanggal pada kalender untuk melihat rincian driver yang libur.</p>
+            {{-- Body Modal: 2 Kolom Sejajar (Kiri Kalender 2 Spans, Kanan Rincian 1 Span) --}}
+            <div class="p-6 bg-canvas">
+                <div class="grid gap-6 lg:grid-cols-3 items-start">
+                    {{-- Kolom Kiri: Kalender Grid Bulanan (Senin - Minggu) --}}
+                    <div class="lg:col-span-2 card p-4">
+                        {{-- Legend Bar Ringkas --}}
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 text-xs text-gray-600">
+                            <div class="flex items-center gap-4">
+                                <span class="inline-flex items-center gap-1.5 font-medium">
+                                    <span class="h-2 w-2 rounded-full bg-rose-500"></span> Titik Merah: Ada driver libur
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 font-medium">
+                                    <span class="h-2.5 w-2.5 rounded border border-brand bg-brand/20"></span> Hari Ini
+                                </span>
+                            </div>
+                            <span class="text-gray-500">Total: <strong class="text-gray-800">{{ $kalender['total_driver_libur_bulan_ini'] }} hari libur</strong></span>
                         </div>
-                        <span id="kalenderDetailBadge" class="hidden rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700 border border-rose-200"></span>
+
+                        {{-- Tabel Grid Kalender 7 Kolom Proporsional --}}
+                        <div class="w-full border border-gray-200 rounded-lg overflow-hidden bg-white">
+                            {{-- Header Hari Horizontal --}}
+                            <div class="grid grid-cols-7 bg-gray-50 text-center text-xs font-semibold text-gray-600 border-b border-gray-200">
+                                <div class="py-2">Senin</div>
+                                <div class="py-2">Selasa</div>
+                                <div class="py-2">Rabu</div>
+                                <div class="py-2">Kamis</div>
+                                <div class="py-2">Jumat</div>
+                                <div class="py-2 text-amber-600 font-bold">Sabtu</div>
+                                <div class="py-2 text-rose-600 font-bold">Minggu</div>
+                            </div>
+
+                            {{-- Tanggal Bulanan (Pas di Layar, Tanpa Scroll Vertikal) --}}
+                            <div class="grid grid-cols-7 divide-x divide-y divide-gray-200 bg-gray-50/40">
+                                @foreach ($kalender['daftar_hari'] as $hari)
+                                    @if (! $hari['apakah_bulan_ini'])
+                                        <div class="h-14 sm:h-16 bg-gray-100/40 p-1.5"></div>
+                                    @else
+                                        @php
+                                            $isToday = $hari['apakah_hari_ini'];
+                                            $hasOff = $hari['ada_driver_libur'];
+                                            $offCount = $hari['jumlah_driver_libur'];
+                                            $tglStr = $hari['tanggal'];
+                                        @endphp
+                                        <div onclick="pilihTanggalKalender('{{ $tglStr }}', {{ json_encode($hari['daftar_driver_libur']) }})"
+                                             class="cell-tanggal h-14 sm:h-16 p-1.5 transition cursor-pointer hover:bg-orange-50/60 relative flex flex-col justify-between {{ $isToday ? 'bg-orange-50/50 ring-2 ring-inset ring-brand' : 'bg-white' }}"
+                                             data-tanggal="{{ $tglStr }}"
+                                             title="Klik tanggal {{ $tglStr }}">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-semibold {{ $isToday ? 'rounded-full bg-brand text-white w-5 h-5 flex items-center justify-center text-[10px]' : 'text-gray-800' }}">
+                                                    {{ $hari['nomor_hari'] }}
+                                                </span>
+                                                @if ($isToday)
+                                                    <span class="text-[8px] font-bold text-brand uppercase">Hari Ini</span>
+                                                @endif
+                                            </div>
+
+                                            @if ($hasOff)
+                                                <div class="flex items-center gap-1 mt-auto">
+                                                    <span class="h-2 w-2 rounded-full bg-rose-500 shrink-0"></span>
+                                                    <span class="text-[10px] font-semibold text-rose-700 truncate">{{ $offCount }} Libur</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
-                    <div id="kalenderDetailKonten" class="max-h-56 overflow-y-auto space-y-2">
-                        <p class="text-xs text-gray-400 italic text-center py-4">Silakan klik salah satu tanggal bertitik merah di atas untuk melihat detail lengkap driver yang libur.</p>
+
+                    {{-- Kolom Kanan: Card Rincian Driver Libur (Gaya Form Card Bersih Seperti Gambar 3) --}}
+                    <div class="card p-5 h-fit">
+                        <div class="border-b border-gray-100 pb-3 mb-3">
+                            <h4 class="font-bold text-gray-900 text-sm" id="kalenderDetailJudul">Rincian Driver Libur</h4>
+                            <p class="text-xs text-gray-400 mt-0.5" id="kalenderDetailSubjudul">Pilih tanggal pada kalender</p>
+                        </div>
+
+                        <div id="kalenderDetailKonten" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                            <p class="text-xs text-gray-400 italic py-8 text-center">Klik salah satu tanggal bertitik merah pada kalender untuk melihat rincian driver yang libur.</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-100 mt-4 text-xs text-gray-400">
+                            Data jadwal libur operasional cabang PT Multi Talent Universal (MTU).
+                        </div>
                     </div>
                 </div>
             </div>
@@ -423,59 +425,64 @@
             const modal = document.getElementById('modalKalender');
             if (modal) {
                 modal.showModal();
+                // Buka otomatis tanggal 15 atau tanggal pertama dengan driver libur
+                const offCells = document.querySelectorAll('.cell-tanggal:has(.bg-rose-500)');
+                if (offCells.length > 0) {
+                    offCells[0].click();
+                }
+            }
+        }
+
+        function tutupModalKalender() {
+            const modal = document.getElementById('modalKalender');
+            if (modal) {
+                modal.close();
+            }
+            // Bersihkan parameter kalender dari URL tanpa refresh halaman
+            if (window.location.search.includes('kalender=')) {
+                const url = new URL(window.location);
+                url.searchParams.delete('kalender');
+                window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
             }
         }
 
         function pilihTanggalKalender(tanggal, daftarDriver) {
             // Highlight cell terpilih
             document.querySelectorAll('.cell-tanggal').forEach(c => {
-                c.classList.remove('ring-2', 'ring-indigo-500');
+                c.classList.remove('ring-2', 'ring-brand', 'bg-orange-50');
             });
             const cell = document.querySelector(`.cell-tanggal[data-tanggal="${tanggal}"]`);
             if (cell) {
-                cell.classList.add('ring-2', 'ring-indigo-500');
+                cell.classList.add('ring-2', 'ring-brand', 'bg-orange-50');
             }
 
             const judul = document.getElementById('kalenderDetailJudul');
             const subjudul = document.getElementById('kalenderDetailSubjudul');
-            const badge = document.getElementById('kalenderDetailBadge');
             const konten = document.getElementById('kalenderDetailKonten');
 
-            judul.textContent = `Daftar Driver Libur — ${tanggal}`;
-            subjudul.textContent = `Tanggal terpilih pada kalender operasional cabang.`;
+            judul.textContent = `Driver Libur — ${tanggal}`;
+            subjudul.textContent = daftarDriver && daftarDriver.length > 0
+                ? `${daftarDriver.length} driver dijadwalkan libur`
+                : 'Tidak ada driver libur';
 
             if (!daftarDriver || daftarDriver.length === 0) {
-                badge.classList.add('hidden');
-                konten.innerHTML = `<div class="p-4 text-center text-xs text-gray-500 bg-white rounded-lg border border-gray-100">Tidak ada driver yang dijadwalkan libur pada tanggal ${tanggal}. Semua armada beroperasi normal.</div>`;
+                konten.innerHTML = `<div class="p-4 text-center text-xs text-gray-400 bg-gray-50 rounded-lg">Tidak ada driver yang dijadwalkan libur pada tanggal ini. Armada beroperasi normal.</div>`;
             } else {
-                badge.textContent = `${daftarDriver.length} Driver Libur`;
-                badge.classList.remove('hidden');
-
                 let html = '';
                 daftarDriver.forEach((d, idx) => {
-                    const badgeVerif = d.status_verifikasi === 'disetujui'
-                        ? '<span class="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">Disetujui</span>'
-                        : '<span class="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">Perlu Verifikasi</span>';
-
                     html += `
-                        <div class="border border-gray-200 rounded-lg p-3 bg-white space-y-1.5 shadow-xs">
+                        <div class="border border-gray-200 rounded-lg p-3 bg-white space-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="font-bold text-gray-900 text-xs">${idx + 1}. ${d.nama}</span>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">Status: ${d.status_jadwal}</span>
-                                    ${badgeVerif}
-                                </div>
+                                <span class="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">Libur</span>
                             </div>
-                            <div class="text-[11px] text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
-                                <span>NIP: <strong class="font-mono text-gray-800">${d.nip}</strong></span>
-                                <span>NIK MTU: <strong class="font-mono text-gray-800">${d.nik}</strong></span>
-                                <span>Proyek: <strong class="text-brand">${d.proyek}</strong></span>
+                            <div class="text-[11px] text-gray-600 font-mono">
+                                NIP: ${d.nip} &bull; Proyek: <strong class="font-sans text-gray-900">${d.proyek}</strong>
                             </div>
-                            <div class="text-[11px] text-gray-500 flex flex-wrap gap-x-4 pt-0.5">
-                                <span>Driver Pengganti: <strong class="text-gray-800">${d.pengganti || '<em class="text-gray-400 font-normal">Tidak ada</em>'}</strong></span>
-                                <span>Sumber Jadwal: <strong class="text-gray-800">${d.sumber}</strong></span>
+                            <div class="text-[11px] text-gray-500 pt-0.5">
+                                Pengganti: <strong class="text-gray-800">${d.pengganti || 'Tidak ada'}</strong>
                             </div>
-                            ${d.keterangan ? `<p class="text-[11px] text-gray-600 italic bg-gray-50 p-1.5 rounded border border-gray-100">&ldquo;${d.keterangan}&rdquo;</p>` : ''}
+                            ${d.keterangan ? `<p class="text-[11px] text-gray-500 italic pt-0.5">&ldquo;${d.keterangan}&rdquo;</p>` : ''}
                         </div>
                     `;
                 });
@@ -511,7 +518,7 @@
             modal.showModal();
         }
 
-        // Buka modal kalender otomatis jika diarahkan dari query kalender=1 atau view=kalender
+        // Buka modal kalender jika ada query kalender=1
         document.addEventListener('DOMContentLoaded', function() {
             @if ($bukaKalender)
                 bukaModalKalender();
