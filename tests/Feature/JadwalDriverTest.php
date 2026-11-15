@@ -62,7 +62,7 @@ class JadwalDriverTest extends TestCase
             'keterangan' => 'Libur terjadwal',
         ]);
 
-        // Cek Kalender view
+        // Cek Kalender view (kompatibilitas link lama)
         $resKalender = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
             'view' => 'kalender',
             'tahun' => 2026,
@@ -82,6 +82,92 @@ class JadwalDriverTest extends TestCase
         $resTabel->assertOk();
         $resTabel->assertSee('MTU2001');
         $resTabel->assertSee('Wingbox');
+    }
+
+    public function test_halaman_utama_langsung_tampilkan_tabel_dengan_4_tombol_dan_tanpa_tab(): void
+    {
+        $admin = $this->admin();
+        $driver = $this->buatDriver('Ahmad Fauzi', 'MTU2004', '3215010404940004', 'Logistik');
+
+        JadwalDriver::create([
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-18',
+            'status_jadwal' => 'libur',
+            'sumber' => 'manual_cabang',
+            'proyek' => 'Logistik',
+            'keterangan' => 'Libur cabang',
+        ]);
+
+        $res = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
+            'tahun' => 2026,
+            'bulan' => 9,
+        ]));
+
+        $res->assertOk();
+        // Cek Judul & Subjudul
+        $res->assertSee('Jadwal Libur Driver');
+        $res->assertSee('Kelola jadwal kerja dan libur driver PT Multi Talent Universal');
+
+        // Cek 4 Tombol Aksi Bagian Atas
+        $res->assertSee('+ Tambah Libur Driver');
+        $res->assertSee('Import Jadwal Libur');
+        $res->assertSee('Template Excel');
+        $res->assertSee('Kalender');
+
+        // Cek Kolom Tabel
+        $res->assertSee('Nama Driver');
+        $res->assertSee('NIP');
+        $res->assertSee('NIK MTU');
+        $res->assertSee('Proyek');
+        $res->assertSee('Tanggal Libur');
+        $res->assertSee('Driver Pengganti');
+        $res->assertSee('Sumber Jadwal');
+        $res->assertSee('Aksi');
+        $res->assertSee('Ahmad Fauzi');
+        $res->assertSee('MTU2004');
+
+        // Cek Kalender Bulanan memiliki 7 kolom hari horizontal
+        $res->assertSee('Senin');
+        $res->assertSee('Selasa');
+        $res->assertSee('Rabu');
+        $res->assertSee('Kamis');
+        $res->assertSee('Jumat');
+        $res->assertSee('Sabtu');
+        $res->assertSee('Minggu');
+
+        // Pastikan tab toggle lama tidak ada
+        $res->assertDontSee('role="group"', false);
+    }
+
+    public function test_filter_rentang_tanggal_bekerja_pada_tabel_jadwal(): void
+    {
+        $admin = $this->admin();
+        $driver = $this->buatDriver('Diki Maulana', 'MTU2001', '3215010101900001', 'Wingbox');
+
+        JadwalDriver::create([
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-05',
+            'status_jadwal' => 'libur',
+            'proyek' => 'Wingbox',
+            'keterangan' => 'Libur 1',
+        ]);
+
+        JadwalDriver::create([
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-20',
+            'status_jadwal' => 'libur',
+            'proyek' => 'Wingbox',
+            'keterangan' => 'Libur 2',
+        ]);
+
+        // Filter rentang 01-10 September (hanya Libur 1 muncul)
+        $resFilter = $this->actingAs($admin)->get(route('admin.jadwal-driver.index', [
+            'tanggal_mulai' => '2026-09-01',
+            'tanggal_akhir' => '2026-09-10',
+        ]));
+        $resFilter->assertOk();
+        $resFilter->assertSee('Libur 1');
+        $resFilter->assertDontSee('Libur 2');
     }
 
     public function test_indikator_titik_merah_muncul_pada_tanggal_ada_driver_libur(): void

@@ -2,88 +2,49 @@
 @section('judul', 'Jadwal Libur Driver')
 
 @section('content')
-    {{-- HEADER HALAMAN & AKSI UTAMA --}}
+    {{-- A. JUDUL DAN SUBJUDUL & B. EMPAT TOMBOL AKSI --}}
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-900">Jadwal Libur Driver (Operasional MTU)</h2>
-            <p class="text-sm text-gray-500">Kelola jadwal kerja dan libur driver cabang berdasarkan import kantor pusat maupun libur mendadak.</p>
+            <h2 class="text-xl font-bold text-gray-900">Jadwal Libur Driver</h2>
+            <p class="text-sm text-gray-500">Kelola jadwal kerja dan libur driver PT Multi Talent Universal berdasarkan data kantor pusat maupun perubahan operasional cabang.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <button type="button" onclick="document.getElementById('modalTambahManual').showModal()" class="btn btn-primary btn-sm">
+
+        {{-- B. EMPAT TOMBOL AKSI UTAMA (1 BARIS DI DESKTOP, RAPI MEMBUNGKUS DI MOBILE) --}}
+        <div class="flex flex-wrap items-center gap-2.5">
+            {{-- Tombol 1: Tambah Libur Driver --}}
+            <button type="button" onclick="document.getElementById('modalTambahManual').showModal()" class="btn btn-primary btn-sm whitespace-nowrap">
                 + Tambah Libur Driver
             </button>
-            <a href="{{ route('admin.jadwal-driver.import') }}" class="btn btn-dark btn-sm">
+
+            {{-- Tombol 2: Import Jadwal Libur --}}
+            <a href="{{ route('admin.jadwal-driver.import') }}" class="btn btn-dark btn-sm whitespace-nowrap">
                 &uarr; Import Jadwal Libur
             </a>
-            <div class="relative inline-block text-left" id="dropdownTemplate">
-                <button type="button" onclick="toggleDropdownTemplate()" class="btn btn-outline btn-sm">
-                    &darr; Template Excel &or;
-                </button>
-                <div id="menuTemplate" class="hidden absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-20">
-                    <div class="py-1">
-                        <a href="{{ route('admin.jadwal-driver.template', ['format' => 'matriks', 'tahun' => $tahun, 'bulan' => $bulan]) }}" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100">
-                            Format 1 — Matriks Pusat (.xlsx)
-                        </a>
-                        <a href="{{ route('admin.jadwal-driver.template', ['format' => 'tabel_standar', 'tahun' => $tahun, 'bulan' => $bulan]) }}" class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100">
-                            Format 2 — Tabel Standar (.xlsx)
-                        </a>
-                    </div>
-                </div>
-            </div>
+
+            {{-- Tombol 3: Template Excel --}}
+            <a href="{{ route('admin.jadwal-driver.template') }}" class="btn btn-outline btn-sm whitespace-nowrap" title="Unduh Template Excel Standar (.xlsx)">
+                &darr; Template Excel
+            </a>
+
+            {{-- Tombol 4: Kalender --}}
+            <button type="button" onclick="bukaModalKalender()" class="btn btn-outline btn-sm whitespace-nowrap" title="Buka Kalender Bulanan Interaktif">
+                📅 Kalender
+            </button>
         </div>
     </div>
 
-    {{-- KARTU NAVIGASI PERIODE & FILTER --}}
+    {{-- C. PANEL PENCARIAN DAN FILTER --}}
     <div class="card mb-6 p-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
-            {{-- TOGGLE TAMPILAN: KALENDER | TABEL | MATRIKS --}}
-            <div class="inline-flex rounded-md shadow-sm" role="group">
-                <a href="{{ request()->fullUrlWithQuery(['view' => 'kalender']) }}"
-                   class="rounded-l-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold {{ $viewMode === 'kalender' ? 'bg-brand text-white border-brand' : 'bg-white text-gray-700 hover:bg-gray-50' }}">
-                    📅 Kalender
-                </a>
-                <a href="{{ request()->fullUrlWithQuery(['view' => 'tabel']) }}"
-                   class="border-t border-b border-gray-300 px-3 py-1.5 text-xs font-semibold {{ $viewMode === 'tabel' ? 'bg-brand text-white border-brand' : 'bg-white text-gray-700 hover:bg-gray-50' }}">
-                    📋 Tabel
-                </a>
-                <a href="{{ request()->fullUrlWithQuery(['view' => 'matriks']) }}"
-                   class="rounded-r-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold {{ $viewMode === 'matriks' ? 'bg-brand text-white border-brand' : 'bg-white text-gray-700 hover:bg-gray-50' }}">
-                    📊 Matriks
-                </a>
-            </div>
-
-            {{-- NAVIGASI BULAN & TAHUN DENGAN PREV / NEXT --}}
-            @php
-                $currDate = \Carbon\CarbonImmutable::createFromDate($tahun, $bulan, 1);
-                $prevDate = $currDate->subMonth();
-                $nextDate = $currDate->addMonth();
-            @endphp
-            <div class="flex items-center gap-2">
-                <a href="{{ request()->fullUrlWithQuery(['tahun' => $prevDate->year, 'bulan' => $prevDate->month]) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Sebelumnya">
-                    &larr;
-                </a>
-                <span class="text-sm font-bold text-gray-800 min-w-32 text-center">
-                    {{ $currDate->translatedFormat('F Y') }}
-                </span>
-                <a href="{{ request()->fullUrlWithQuery(['tahun' => $nextDate->year, 'bulan' => $nextDate->month]) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Berikutnya">
-                    &rarr;
-                </a>
-            </div>
-        </div>
-
-        {{-- FORM PENCARIAN & FILTER --}}
-        <form method="GET" class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
-            <input type="hidden" name="view" value="{{ $viewMode }}">
-            <input type="hidden" name="tahun" value="{{ $tahun }}">
-            <input type="hidden" name="bulan" value="{{ $bulan }}">
-
+        <form method="GET" action="{{ route('admin.jadwal-driver.index') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 items-end">
+            {{-- Search Bar: Nama Driver / NIK MTU / NIP --}}
             <div class="sm:col-span-2">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Cari Driver (Nama / NIK MTU / NIP)</label>
-                <input type="text" name="cari" value="{{ $filter['cari'] }}" placeholder="Ketik nama, NIP, atau NIK driver..." class="input w-full text-xs">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Cari Driver (Nama / NIK MTU / NIP)</label>
+                <input type="text" name="cari" value="{{ $filter['cari'] }}" placeholder="Ketik nama, NIP, atau NIK..." class="input w-full text-xs">
             </div>
 
+            {{-- Filter Proyek --}}
             <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Filter Proyek</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Proyek</label>
                 <select name="proyek" class="input w-full text-xs">
                     <option value="">Semua Proyek</option>
                     @foreach ($daftarProyek as $p)
@@ -92,244 +53,280 @@
                 </select>
             </div>
 
-            <div class="flex gap-2">
-                <button type="submit" class="btn btn-dark btn-sm flex-1">Filter</button>
-                <a href="{{ route('admin.jadwal-driver.index', ['view' => $viewMode, 'tahun' => $tahun, 'bulan' => $bulan]) }}" class="btn btn-outline btn-sm">Reset</a>
+            {{-- Tanggal Mulai --}}
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Mulai</label>
+                <input type="date" name="tanggal_mulai" value="{{ $filter['tanggal_mulai'] ?? '' }}" class="input w-full text-xs">
+            </div>
+
+            {{-- Tanggal Akhir --}}
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Akhir</label>
+                <input type="date" name="tanggal_akhir" value="{{ $filter['tanggal_akhir'] ?? '' }}" class="input w-full text-xs">
+            </div>
+
+            {{-- Filter Status Libur --}}
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Status</label>
+                <select name="status" class="input w-full text-xs">
+                    <option value="">Semua Status</option>
+                    <option value="libur" {{ $filter['status'] === 'libur' ? 'selected' : '' }}>Libur</option>
+                    <option value="kerja" {{ $filter['status'] === 'kerja' ? 'selected' : '' }}>Kerja</option>
+                </select>
+            </div>
+
+            {{-- Tombol Filter & Reset --}}
+            <div class="sm:col-span-2 lg:col-span-6 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 mt-1">
+                <div class="text-xs text-gray-500">
+                    @if (!empty($filter['cari']) || !empty($filter['proyek']) || !empty($filter['tanggal_mulai']) || !empty($filter['tanggal_akhir']) || !empty($filter['status']))
+                        <span class="inline-flex items-center gap-1 text-brand font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand"></span> Filter kustom sedang aktif
+                        </span>
+                    @else
+                        <span>Menampilkan jadwal periode: <strong>{{ \Carbon\CarbonImmutable::createFromDate($tahun, $bulan, 1)->translatedFormat('F Y') }}</strong></span>
+                    @endif
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('admin.jadwal-driver.index') }}" class="btn btn-outline btn-sm">Reset</a>
+                    <button type="submit" class="btn btn-dark btn-sm">Cari / Filter</button>
+                </div>
             </div>
         </form>
     </div>
 
-    {{-- KONTEN UTAMA BERDASARKAN VIEW MODE --}}
-    @if ($viewMode === 'kalender')
-        {{-- VIEW KALENDER BULANAN INTERAKTIF --}}
-        <div class="card overflow-hidden">
-            <div class="border-b border-gray-100 bg-gray-50/50 p-4 flex flex-wrap items-center justify-between gap-2">
-                <div class="text-xs text-gray-600">
-                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-1"></span> <strong>Titik Merah:</strong> Menandakan ada driver yang dijadwalkan libur pada tanggal tersebut.
-                </div>
-                <div class="text-xs text-gray-500">
-                    Total driver libur bulan ini: <strong class="text-gray-900">{{ $kalender['total_driver_libur_bulan_ini'] }} hari</strong>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-100 text-center text-xs font-bold text-gray-700 uppercase">
-                <div class="py-2.5">Sen</div>
-                <div class="py-2.5">Sel</div>
-                <div class="py-2.5">Rab</div>
-                <div class="py-2.5">Kam</div>
-                <div class="py-2.5">Jum</div>
-                <div class="py-2.5 text-amber-600">Sab</div>
-                <div class="py-2.5 text-rose-600">Min</div>
-            </div>
-
-            <div class="grid grid-cols-7 divide-x divide-y divide-gray-200">
-                @foreach ($kalender['daftar_hari'] as $hari)
-                    @if (! $hari['apakah_bulan_ini'])
-                        <div class="min-h-24 bg-gray-50/60 p-2 text-gray-300"></div>
-                    @else
-                        @php
-                            $isToday = $hari['apakah_hari_ini'];
-                            $hasOff = $hari['ada_driver_libur'];
-                            $offCount = $hari['jumlah_driver_libur'];
-                            $tglStr = $hari['tanggal'];
-                        @endphp
-                        <div onclick="bukaModalTanggal('{{ $tglStr }}', {{ json_encode($hari['daftar_driver_libur']) }})"
-                             class="min-h-24 p-2 transition cursor-pointer hover:bg-blue-50/50 relative flex flex-col justify-between {{ $isToday ? 'bg-blue-50/40 ring-2 ring-inset ring-brand' : 'bg-white' }}">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold {{ $isToday ? 'rounded-full bg-brand text-white w-6 h-6 flex items-center justify-center' : 'text-gray-800' }}">
-                                    {{ $hari['nomor_hari'] }}
-                                </span>
-                                @if ($isToday)
-                                    <span class="text-[9px] uppercase font-bold text-brand tracking-tighter">Hari Ini</span>
-                                @endif
-                            </div>
-
-                            {{-- INDIKATOR TITIK MERAH KECIL DENGAN SUMMARY LIBUR --}}
-                            @if ($hasOff)
-                                <div class="mt-2">
-                                    <div class="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200 shadow-xs">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                        <span>{{ $offCount }} Libur</span>
-                                    </div>
-                                    <p class="text-[10px] text-gray-500 mt-1 truncate">
-                                        {{ $hari['daftar_driver_libur'][0]['nama'] }}
-                                        @if ($offCount > 1) +{{ $offCount - 1 }} lainnya @endif
-                                    </p>
-                                </div>
+    {{-- D. TABEL JADWAL LIBUR DRIVER --}}
+    <div class="table-wrap">
+        <table class="table-base">
+            <thead>
+                <tr>
+                    <th class="w-12 text-center">No</th>
+                    <th>Nama Driver</th>
+                    <th>NIP</th>
+                    <th>NIK MTU</th>
+                    <th>Proyek</th>
+                    <th>Tanggal Libur</th>
+                    <th class="text-center">Status</th>
+                    <th>Driver Pengganti</th>
+                    <th>Sumber Jadwal</th>
+                    <th>Keterangan</th>
+                    <th class="text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($daftarJadwalTabel as $idx => $j)
+                    <tr class="hover:bg-gray-50/60 transition">
+                        <td class="text-center text-xs text-gray-400 font-mono">
+                            {{ $daftarJadwalTabel->firstItem() + $idx }}
+                        </td>
+                        <td>
+                            <p class="font-semibold text-gray-900">{{ $j->karyawan?->nama }}</p>
+                            <p class="text-[11px] text-gray-400">{{ $j->karyawan?->jabatan?->nama ?? 'Driver' }}</p>
+                        </td>
+                        <td>
+                            <span class="font-mono text-xs text-gray-700 font-medium">{{ $j->karyawan?->nip ?? '-' }}</span>
+                        </td>
+                        <td>
+                            <span class="font-mono text-xs text-gray-600">{{ $j->karyawan?->nik ?? '-' }}</span>
+                        </td>
+                        <td>
+                            <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                                {{ $j->proyek ?? 'Operasional MTU' }}
+                            </span>
+                        </td>
+                        <td class="font-medium text-gray-900 text-xs whitespace-nowrap">
+                            {{ $j->tanggal->translatedFormat('d M Y') }}
+                        </td>
+                        <td class="text-center whitespace-nowrap">
+                            <span class="rounded px-2 py-0.5 text-xs font-semibold {{ $j->status_jadwal === 'libur' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
+                                {{ ucfirst($j->status_jadwal) }}
+                            </span>
+                        </td>
+                        <td>
+                            @if ($j->driverPengganti)
+                                <p class="text-xs font-semibold text-gray-900">{{ $j->driverPengganti->nama }}</p>
+                                <p class="font-mono text-[10px] text-gray-400">NIP: {{ $j->driverPengganti->nip ?? $j->driverPengganti->nik }}</p>
                             @else
-                                <div class="mt-2 text-[10px] text-gray-300">Normal</div>
+                                <span class="text-xs text-gray-400 italic">Tidak ada pengganti</span>
                             @endif
-                        </div>
-                    @endif
-                @endforeach
-            </div>
-        </div>
-
-    @elseif ($viewMode === 'tabel')
-        {{-- VIEW TABEL JADWAL DRIVER --}}
-        <div class="table-wrap">
-            <table class="table-base">
-                <thead>
-                    <tr>
-                        <th class="w-12 text-center">No</th>
-                        <th>Nama Driver</th>
-                        <th>NIP & NIK MTU</th>
-                        <th>Proyek</th>
-                        <th>Tanggal Libur</th>
-                        <th class="text-center">Status</th>
-                        <th>Driver Pengganti</th>
-                        <th>Sumber</th>
-                        <th>Verifikasi</th>
-                        <th>Keterangan</th>
-                        <th class="text-right">Aksi</th>
+                        </td>
+                        <td>
+                            <span class="rounded px-2 py-0.5 text-[11px] font-semibold {{ $j->sumber === 'import_pusat' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200' }}">
+                                {{ $j->sumber === 'import_pusat' ? 'Import Pusat' : 'Manual Cabang' }}
+                            </span>
+                        </td>
+                        <td class="text-xs text-gray-600 max-w-xs truncate" title="{{ $j->keterangan }}">
+                            {{ $j->keterangan ?? '-' }}
+                        </td>
+                        <td class="text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <button type="button" onclick="bukaModalPengganti({{ $j->id }}, '{{ addslashes($j->karyawan?->nama ?? '') }}', '{{ $j->tanggal->format('Y-m-d') }}', '{{ $j->driver_pengganti_id }}')" class="btn btn-outline btn-sm text-[11px] py-1 px-2.5">
+                                    Pengganti
+                                </button>
+                                <form method="POST" action="{{ route('admin.jadwal-driver.destroy', $j) }}" onsubmit="return confirm('Batalkan jadwal libur untuk {{ addslashes($j->karyawan?->nama ?? '') }} pada tanggal {{ $j->tanggal->format('d/m/Y') }}?')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-danger btn-sm text-[11px] py-1 px-2.5">Batal</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($daftarJadwalTabel as $idx => $j)
-                        <tr>
-                            <td class="text-center text-xs text-gray-400">{{ $daftarJadwalTabel->firstItem() + $idx }}</td>
-                            <td>
-                                <p class="font-medium text-gray-900">{{ $j->karyawan?->nama }}</p>
-                                <p class="text-xs text-gray-400">{{ $j->karyawan?->jabatan?->nama ?? 'Driver' }}</p>
-                            </td>
-                            <td>
-                                <p class="font-mono text-xs text-gray-700">{{ $j->karyawan?->nip ?? '-' }}</p>
-                                <p class="font-mono text-[11px] text-gray-400">{{ $j->karyawan?->nik }}</p>
-                            </td>
-                            <td>
-                                <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                                    {{ $j->proyek ?? 'Operasional MTU' }}
-                                </span>
-                            </td>
-                            <td class="font-medium text-gray-900 text-xs">
-                                {{ $j->tanggal->translatedFormat('d M Y') }}
-                            </td>
-                            <td class="text-center">
-                                <span class="rounded px-2 py-0.5 text-xs font-semibold {{ $j->status_jadwal === 'libur' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700' }}">
-                                    {{ ucfirst($j->status_jadwal) }}
-                                </span>
-                            </td>
-                            <td>
-                                @if ($j->driverPengganti)
-                                    <p class="text-xs font-medium text-gray-900">{{ $j->driverPengganti->nama }}</p>
-                                    <p class="font-mono text-[10px] text-gray-400">{{ $j->driverPengganti->nip ?? $j->driverPengganti->nik }}</p>
-                                @else
-                                    <span class="text-xs text-gray-400 italic">Tidak ada pengganti</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="text-xs {{ $j->sumber === 'import_pusat' ? 'text-blue-700' : 'text-purple-700' }}">
-                                    {{ $j->sumber === 'import_pusat' ? 'Import Pusat' : 'Manual Cabang' }}
-                                </span>
-                            </td>
-                            <td>
-                                @if ($j->status_verifikasi === 'disetujui')
-                                    <span class="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Disetujui</span>
-                                @elseif ($j->status_verifikasi === 'konflik')
-                                    <span class="rounded bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Konflik</span>
-                                @else
-                                    <span class="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Perlu Verifikasi</span>
-                                @endif
-                            </td>
-                            <td class="text-xs text-gray-600 max-w-xs truncate">{{ $j->keterangan ?? '-' }}</td>
-                            <td class="text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <button type="button" onclick="bukaModalPengganti({{ $j->id }}, '{{ addslashes($j->karyawan?->nama ?? '') }}', '{{ $j->tanggal->format('Y-m-d') }}', '{{ $j->driver_pengganti_id }}')" class="btn btn-outline btn-sm text-[11px] py-1">
-                                        Pengganti
-                                    </button>
-                                    <form method="POST" action="{{ route('admin.jadwal-driver.destroy', $j) }}" onsubmit="return confirm('Batalkan jadwal libur untuk {{ addslashes($j->karyawan?->nama ?? '') }}?')">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-danger btn-sm text-[11px] py-1">Batal</button>
-                                    </form>
+                @empty
+                    <tr>
+                        <td colspan="11" class="py-12 text-center text-gray-500">
+                            <div class="mx-auto max-w-sm text-center">
+                                <p class="text-base font-semibold text-gray-800">Tidak ada jadwal driver ditemukan</p>
+                                <p class="text-xs text-gray-400 mt-1">Belum ada data jadwal yang sesuai dengan filter atau periode yang Anda pilih.</p>
+                                <div class="mt-4 flex items-center justify-center gap-2">
+                                    <a href="{{ route('admin.jadwal-driver.index') }}" class="btn btn-outline btn-sm">Reset Filter</a>
+                                    <button type="button" onclick="document.getElementById('modalTambahManual').showModal()" class="btn btn-primary btn-sm">+ Tambah Libur</button>
                                 </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="11" class="py-8 text-center text-gray-500">
-                                Tidak ada data jadwal driver untuk periode dan filter ini.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="mt-4">
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    {{-- E. PAGINATION DAN JUMLAH DATA --}}
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <p class="text-xs text-gray-500">
+            Menampilkan <strong class="text-gray-900">{{ $daftarJadwalTabel->firstItem() ?? 0 }}</strong> sampai <strong class="text-gray-900">{{ $daftarJadwalTabel->lastItem() ?? 0 }}</strong> dari <strong class="text-gray-900">{{ $daftarJadwalTabel->total() }}</strong> jadwal driver.
+        </p>
+        <div>
             {{ $daftarJadwalTabel->links() }}
         </div>
+    </div>
 
-    @elseif ($viewMode === 'matriks')
-        {{-- VIEW MATRIKS SEPERTI FILE KANTOR PUSAT --}}
-        @php $daysInMonth = \Carbon\CarbonImmutable::createFromDate($tahun, $bulan, 1)->daysInMonth; @endphp
-        <div class="table-wrap">
-            <table class="table-base text-xs">
-                <thead>
-                    <tr>
-                        <th class="sticky left-0 bg-white z-10">Driver</th>
-                        <th class="sticky left-36 bg-white z-10">Proyek</th>
-                        @for ($d = 1; $d <= $daysInMonth; $d++)
-                            <th class="text-center px-2 py-1.5 font-mono text-[11px]">{{ sprintf('%02d', $d) }}</th>
-                        @endfor
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($matriksData as $row)
-                        <tr>
-                            <td class="sticky left-0 bg-white z-10 font-medium">
-                                <p class="text-gray-900">{{ $row['karyawan']->nama }}</p>
-                                <p class="font-mono text-[10px] text-gray-400">{{ $row['karyawan']->nip ?? $row['karyawan']->nik }}</p>
-                            </td>
-                            <td class="sticky left-36 bg-white z-10">
-                                <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-700 font-semibold">{{ $row['proyek'] }}</span>
-                            </td>
-                            @for ($d = 1; $d <= $daysInMonth; $d++)
-                                @php $code = $row['harian'][$d] ?? '-'; @endphp
-                                <td class="text-center font-mono font-bold px-1.5 py-1">
-                                    @if ($code === 'L')
-                                        <span class="rounded bg-rose-500 text-white px-1 py-0.5 text-[10px]" title="Libur">L</span>
-                                    @elseif ($code === '1')
-                                        <span class="text-emerald-700" title="Kerja">1</span>
-                                    @else
-                                        <span class="text-gray-300">-</span>
-                                    @endif
-                                </td>
-                            @endfor
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ $daysInMonth + 2 }}" class="py-8 text-center text-gray-500">
-                                Belum ada data jadwal matriks driver untuk periode ini. Silakan unggah jadwal melalui menu Import.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    {{-- MODAL DETAIL TANGGAL KALENDER --}}
-    <dialog id="modalDetailTanggal" class="modal rounded-lg p-0 backdrop:bg-black/50 shadow-2xl max-w-2xl w-full">
-        <div class="p-6">
-            <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+    {{-- MODAL BESAR: KALENDER BULANAN KONVENSIONAL --}}
+    <dialog id="modalKalender" class="modal rounded-2xl p-0 backdrop:bg-black/60 shadow-2xl max-w-4xl w-full mx-auto my-auto overflow-hidden">
+        <div class="flex flex-col max-h-[90vh]">
+            {{-- Header Modal & Navigasi Bulan --}}
+            @php
+                $currDate = \Carbon\CarbonImmutable::createFromDate($tahun, $bulan, 1);
+                $prevDate = $currDate->subMonth();
+                $nextDate = $currDate->addMonth();
+            @endphp
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-white p-5">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-900" id="modalTanggalJudul">Detail Driver Libur</h3>
-                    <p class="text-xs text-gray-500" id="modalTanggalSubjudul">Tanggal terpilih</p>
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <span>📅 Kalender Libur Driver</span>
+                    </h3>
+                    <p class="text-xs text-gray-500">Kalender bulanan 7 kolom konvensional (Senin - Minggu). Titik merah menandakan driver libur.</p>
                 </div>
-                <button type="button" onclick="document.getElementById('modalDetailTanggal').close()" class="btn btn-outline btn-sm">✕ Tutup</button>
+
+                {{-- Navigasi Bulan & Tahun --}}
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('admin.jadwal-driver.index', array_merge(request()->except(['tahun', 'bulan', 'kalender']), ['tahun' => $prevDate->year, 'bulan' => $prevDate->month, 'kalender' => 1])) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Sebelumnya">
+                        &larr;
+                    </a>
+                    <span class="text-sm font-bold text-gray-800 min-w-36 text-center px-2 py-1 bg-gray-50 rounded border border-gray-200">
+                        {{ $currDate->translatedFormat('F Y') }}
+                    </span>
+                    <a href="{{ route('admin.jadwal-driver.index', array_merge(request()->except(['tahun', 'bulan', 'kalender']), ['tahun' => $nextDate->year, 'bulan' => $nextDate->month, 'kalender' => 1])) }}" class="btn btn-outline btn-sm px-2.5" title="Bulan Berikutnya">
+                        &rarr;
+                    </a>
+                    <button type="button" onclick="document.getElementById('modalKalender').close()" class="btn btn-outline btn-sm ml-2">✕ Tutup</button>
+                </div>
             </div>
 
-            <div id="modalTanggalKonten" class="space-y-3 max-h-96 overflow-y-auto">
-                {{-- Diisi secara dinamis oleh JavaScript --}}
+            {{-- Legend & Info --}}
+            <div class="bg-gray-50/80 px-5 py-2.5 border-b border-gray-100 flex flex-wrap items-center justify-between text-xs text-gray-600 gap-2">
+                <div class="flex items-center gap-4">
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> <strong>Titik Merah:</strong> Ada driver libur
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="w-3.5 h-3.5 rounded border-2 border-brand bg-brand/10"></span> Hari Ini
+                    </span>
+                </div>
+                <div class="text-xs text-gray-500">
+                    Total driver libur bulan ini: <strong class="text-gray-900">{{ $kalender['total_driver_libur_bulan_ini'] }} hari kerja</strong>
+                </div>
+            </div>
+
+            {{-- Body Modal: Grid Kalender 7 Kolom Horizontal --}}
+            <div class="p-5 overflow-y-auto space-y-4">
+                <div class="w-full border border-gray-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                    {{-- Nama Hari Horizontal (Urutan: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu) --}}
+                    <div class="grid grid-cols-7 bg-gray-100 text-center text-xs font-bold text-gray-700 border-b border-gray-200">
+                        <div class="py-2.5 px-1 truncate">Senin</div>
+                        <div class="py-2.5 px-1 truncate">Selasa</div>
+                        <div class="py-2.5 px-1 truncate">Rabu</div>
+                        <div class="py-2.5 px-1 truncate">Kamis</div>
+                        <div class="py-2.5 px-1 truncate">Jumat</div>
+                        <div class="py-2.5 px-1 truncate text-amber-600">Sabtu</div>
+                        <div class="py-2.5 px-1 truncate text-rose-600">Minggu</div>
+                    </div>
+
+                    {{-- Grid Tanggal Bulanan (7 Kolom x 5/6 Baris) --}}
+                    <div class="grid grid-cols-7 divide-x divide-y divide-gray-200 bg-gray-50">
+                        @foreach ($kalender['daftar_hari'] as $hari)
+                            @if (! $hari['apakah_bulan_ini'])
+                                <div class="min-h-[72px] sm:min-h-[85px] bg-gray-100/50 p-2"></div>
+                            @else
+                                @php
+                                    $isToday = $hari['apakah_hari_ini'];
+                                    $hasOff = $hari['ada_driver_libur'];
+                                    $offCount = $hari['jumlah_driver_libur'];
+                                    $tglStr = $hari['tanggal'];
+                                @endphp
+                                <div onclick="pilihTanggalKalender('{{ $tglStr }}', {{ json_encode($hari['daftar_driver_libur']) }})"
+                                     class="cell-tanggal min-h-[72px] sm:min-h-[85px] p-2 transition cursor-pointer hover:bg-orange-50/60 relative flex flex-col justify-between {{ $isToday ? 'bg-orange-50/40 ring-2 ring-inset ring-brand' : 'bg-white' }}"
+                                     data-tanggal="{{ $tglStr }}"
+                                     title="Klik untuk melihat rincian driver libur tanggal {{ $tglStr }}">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold {{ $isToday ? 'rounded-full bg-brand text-white w-5 h-5 flex items-center justify-center text-[11px]' : 'text-gray-800' }}">
+                                            {{ $hari['nomor_hari'] }}
+                                        </span>
+                                        @if ($isToday)
+                                            <span class="text-[9px] uppercase font-bold text-brand tracking-tighter hidden sm:inline">Hari Ini</span>
+                                        @endif
+                                    </div>
+
+                                    {{-- Indikator Titik Merah & Ringkasan Driver Libur --}}
+                                    @if ($hasOff)
+                                        <div class="mt-1">
+                                            <div class="inline-flex items-center gap-1 rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700 border border-rose-200 shadow-xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                                <span>{{ $offCount }} Libur</span>
+                                            </div>
+                                            <p class="text-[10px] text-gray-500 mt-0.5 truncate hidden sm:block">
+                                                {{ $hari['daftar_driver_libur'][0]['nama'] }}
+                                                @if ($offCount > 1) +{{ $offCount - 1 }} lainnya @endif
+                                            </p>
+                                        </div>
+                                    @else
+                                        <div class="mt-1 text-[10px] text-gray-300 hidden sm:block">Normal</div>
+                                    @endif
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Panel Detail Tanggal yang Diklik (Di Bawah Kalender, Terintegrasi & Scrollable) --}}
+                <div id="panelDetailTanggalKalender" class="rounded-xl border border-gray-200 bg-gray-50/70 p-4 transition">
+                    <div class="flex flex-wrap items-center justify-between mb-3 border-b border-gray-200 pb-2 gap-2">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900" id="kalenderDetailJudul">Rincian Driver Libur</h4>
+                            <p class="text-xs text-gray-500" id="kalenderDetailSubjudul">Klik kotak tanggal pada kalender untuk melihat rincian driver yang libur.</p>
+                        </div>
+                        <span id="kalenderDetailBadge" class="hidden rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700 border border-rose-200"></span>
+                    </div>
+                    <div id="kalenderDetailKonten" class="max-h-56 overflow-y-auto space-y-2">
+                        <p class="text-xs text-gray-400 italic text-center py-4">Silakan klik salah satu tanggal bertitik merah di atas untuk melihat detail lengkap driver yang libur.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </dialog>
 
-    {{-- MODAL TAMBAH LIBUR MANUAL DARI CABANG --}}
-    <dialog id="modalTambahManual" class="modal rounded-lg p-0 backdrop:bg-black/50 shadow-2xl max-w-lg w-full">
+    {{-- MODAL TAMBAH LIBUR DRIVER MANUAL (CABANG) --}}
+    <dialog id="modalTambahManual" class="modal rounded-xl p-0 backdrop:bg-black/60 shadow-2xl max-w-lg w-full">
         <form method="POST" action="{{ route('admin.jadwal-driver.manual') }}" class="p-6 space-y-4">
             @csrf
             <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 class="text-lg font-bold text-gray-900">+ Tambah Libur Driver (Mendadak)</h3>
+                <h3 class="text-lg font-bold text-gray-900">+ Tambah Libur Driver</h3>
                 <button type="button" onclick="document.getElementById('modalTambahManual').close()" class="btn btn-outline btn-sm">✕</button>
             </div>
 
@@ -356,7 +353,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Selesai (Opsional)</label>
                     <input type="date" name="tanggal_selesai" class="input w-full text-xs" placeholder="Kosongkan jika 1 hari">
-                    <p class="text-[10px] text-gray-400 mt-0.5">Isi bila libur rentang beberapa hari.</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Isi jika libur rentang beberapa hari.</p>
                 </div>
             </div>
 
@@ -388,8 +385,8 @@
         </form>
     </dialog>
 
-    {{-- MODAL TENTUKAN PENGGANTI --}}
-    <dialog id="modalTentukanPengganti" class="modal rounded-lg p-0 backdrop:bg-black/50 shadow-2xl max-w-md w-full">
+    {{-- MODAL TENTUKAN DRIVER PENGGANTI --}}
+    <dialog id="modalTentukanPengganti" class="modal rounded-xl p-0 backdrop:bg-black/60 shadow-2xl max-w-md w-full">
         <form method="POST" id="formPengganti" class="p-6 space-y-4">
             @csrf
             <div class="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -420,21 +417,71 @@
         </form>
     </dialog>
 
-    {{-- SCRIPT INTERAKTIF JADWAL DRIVER --}}
+    {{-- JAVASCRIPT LOGIC --}}
     <script>
-        function toggleDropdownTemplate() {
-            const menu = document.getElementById('menuTemplate');
-            menu.classList.toggle('hidden');
+        function bukaModalKalender() {
+            const modal = document.getElementById('modalKalender');
+            if (modal) {
+                modal.showModal();
+            }
         }
 
-        window.onclick = function(event) {
-            if (!event.target.closest('#dropdownTemplate')) {
-                const menu = document.getElementById('menuTemplate');
-                if (menu && !menu.classList.contains('hidden')) {
-                    menu.classList.add('hidden');
-                }
+        function pilihTanggalKalender(tanggal, daftarDriver) {
+            // Highlight cell terpilih
+            document.querySelectorAll('.cell-tanggal').forEach(c => {
+                c.classList.remove('ring-2', 'ring-indigo-500');
+            });
+            const cell = document.querySelector(`.cell-tanggal[data-tanggal="${tanggal}"]`);
+            if (cell) {
+                cell.classList.add('ring-2', 'ring-indigo-500');
             }
-        };
+
+            const judul = document.getElementById('kalenderDetailJudul');
+            const subjudul = document.getElementById('kalenderDetailSubjudul');
+            const badge = document.getElementById('kalenderDetailBadge');
+            const konten = document.getElementById('kalenderDetailKonten');
+
+            judul.textContent = `Daftar Driver Libur — ${tanggal}`;
+            subjudul.textContent = `Tanggal terpilih pada kalender operasional cabang.`;
+
+            if (!daftarDriver || daftarDriver.length === 0) {
+                badge.classList.add('hidden');
+                konten.innerHTML = `<div class="p-4 text-center text-xs text-gray-500 bg-white rounded-lg border border-gray-100">Tidak ada driver yang dijadwalkan libur pada tanggal ${tanggal}. Semua armada beroperasi normal.</div>`;
+            } else {
+                badge.textContent = `${daftarDriver.length} Driver Libur`;
+                badge.classList.remove('hidden');
+
+                let html = '';
+                daftarDriver.forEach((d, idx) => {
+                    const badgeVerif = d.status_verifikasi === 'disetujui'
+                        ? '<span class="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200">Disetujui</span>'
+                        : '<span class="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">Perlu Verifikasi</span>';
+
+                    html += `
+                        <div class="border border-gray-200 rounded-lg p-3 bg-white space-y-1.5 shadow-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-gray-900 text-xs">${idx + 1}. ${d.nama}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 border border-rose-200">Status: ${d.status_jadwal}</span>
+                                    ${badgeVerif}
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                                <span>NIP: <strong class="font-mono text-gray-800">${d.nip}</strong></span>
+                                <span>NIK MTU: <strong class="font-mono text-gray-800">${d.nik}</strong></span>
+                                <span>Proyek: <strong class="text-brand">${d.proyek}</strong></span>
+                            </div>
+                            <div class="text-[11px] text-gray-500 flex flex-wrap gap-x-4 pt-0.5">
+                                <span>Driver Pengganti: <strong class="text-gray-800">${d.pengganti || '<em class="text-gray-400 font-normal">Tidak ada</em>'}</strong></span>
+                                <span>Sumber Jadwal: <strong class="text-gray-800">${d.sumber}</strong></span>
+                            </div>
+                            ${d.keterangan ? `<p class="text-[11px] text-gray-600 italic bg-gray-50 p-1.5 rounded border border-gray-100">&ldquo;${d.keterangan}&rdquo;</p>` : ''}
+                        </div>
+                    `;
+                });
+                konten.innerHTML = html;
+            }
+        }
 
         function updateDriverInfo(select) {
             const opt = select.options[select.selectedIndex];
@@ -453,49 +500,6 @@
             infoDiv.classList.remove('hidden');
         }
 
-        function bukaModalTanggal(tanggal, daftarDriver) {
-            const modal = document.getElementById('modalDetailTanggal');
-            const judul = document.getElementById('modalTanggalJudul');
-            const subjudul = document.getElementById('modalTanggalSubjudul');
-            const konten = document.getElementById('modalTanggalKonten');
-
-            judul.textContent = `Daftar Driver Libur — ${tanggal}`;
-            subjudul.textContent = `Total: ${daftarDriver.length} driver dijadwalkan libur pada tanggal ini`;
-
-            if (daftarDriver.length === 0) {
-                konten.innerHTML = `<div class="p-6 text-center text-sm text-gray-500">Tidak ada driver yang dijadwalkan libur pada tanggal ini. Semua operasional normal.</div>`;
-            } else {
-                let html = '';
-                daftarDriver.forEach((d, idx) => {
-                    const badgeVerif = d.status_verifikasi === 'disetujui'
-                        ? '<span class="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Disetujui</span>'
-                        : '<span class="rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Perlu Verifikasi</span>';
-
-                    html += `
-                        <div class="border border-gray-100 rounded-lg p-3 bg-gray-50/50 space-y-1">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-gray-900 text-sm">${idx + 1}. ${d.nama}</span>
-                                ${badgeVerif}
-                            </div>
-                            <div class="text-xs text-gray-600 flex flex-wrap gap-x-4 gap-y-1 font-mono">
-                                <span>NIP: ${d.nip}</span>
-                                <span>NIK: ${d.nik}</span>
-                                <span class="font-sans font-semibold text-indigo-700">Proyek: ${d.proyek}</span>
-                            </div>
-                            <div class="text-xs text-gray-500 flex flex-wrap gap-x-4 pt-1">
-                                <span>Sumber: <strong>${d.sumber}</strong></span>
-                                <span>Pengganti: <strong>${d.pengganti || '<em class="text-gray-400">Tidak ada</em>'}</strong></span>
-                            </div>
-                            ${d.keterangan ? `<p class="text-xs text-gray-600 italic pt-1">&ldquo;${d.keterangan}&rdquo;</p>` : ''}
-                        </div>
-                    `;
-                });
-                konten.innerHTML = html;
-            }
-
-            modal.showModal();
-        }
-
         function bukaModalPengganti(jadwalId, namaDriver, tanggal, penggantiId) {
             const modal = document.getElementById('modalTentukanPengganti');
             const form = document.getElementById('formPengganti');
@@ -506,5 +510,12 @@
             form.action = `/admin/jadwal-driver/${jadwalId}/pengganti`;
             modal.showModal();
         }
+
+        // Buka modal kalender otomatis jika diarahkan dari query kalender=1 atau view=kalender
+        document.addEventListener('DOMContentLoaded', function() {
+            @if ($bukaKalender)
+                bukaModalKalender();
+            @endif
+        });
     </script>
 @endsection

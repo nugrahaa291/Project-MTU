@@ -25,28 +25,48 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class JadwalDriverController extends Controller
 {
     /**
-     * Halaman utama Jadwal Libur Driver: Kalender visual interaktif & Tabel jadwal.
+     * Halaman utama Jadwal Libur Driver: Langsung menampilkan tabel jadwal dengan filter lengkap.
      */
     public function index(Request $request, JadwalDriverService $service): View
     {
         $sekarang = CarbonImmutable::now(config('absensi.timezone', 'Asia/Jakarta'));
         $tahun = (int) $request->input('tahun', $sekarang->year);
         $bulan = (int) $request->input('bulan', $sekarang->month);
-        $viewMode = $request->input('view', 'kalender'); // kalender | tabel | matriks
+
+        $tanggalMulai = $request->input('tanggal_mulai', $request->input('start_date'));
+        $tanggalAkhir = $request->input('tanggal_akhir', $request->input('end_date'));
 
         $filter = [
-            'cari' => trim((string) $request->input('cari', '')),
+            'cari' => trim((string) $request->input('cari', $request->input('q', ''))),
             'proyek' => $request->input('proyek'),
             'status' => $request->input('status'),
+            'tanggal_mulai' => $tanggalMulai,
+            'tanggal_akhir' => $tanggalAkhir,
         ];
 
-        // 1. Data Kalender
-        $kalender = $service->ambilKalenderBulanan($tahun, $bulan, $filter);
+        // 1. Data Kalender Bulanan (untuk modal kalender)
+        $kalender = $service->ambilKalenderBulanan($tahun, $bulan, [
+            'cari' => $filter['cari'],
+            'proyek' => $filter['proyek'],
+            'status' => $filter['status'],
+        ]);
 
-        // 2. Data Tabel
-        $tabelQuery = JadwalDriver::with(['karyawan.jabatan', 'driverPengganti'])
-            ->whereYear('tanggal', $tahun)
-            ->whereMonth('tanggal', $bulan);
+        // 2. Data Tabel Jadwal Driver
+        $tabelQuery = JadwalDriver::with(['karyawan.jabatan', 'driverPengganti']);
+
+        // Filter rentang tanggal fleksibel
+        if (! empty($tanggalMulai) && ! empty($tanggalAkhir)) {
+            $tabelQuery->whereDate('tanggal', '>=', $tanggalMulai)
+                ->whereDate('tanggal', '<=', $tanggalAkhir);
+        } elseif (! empty($tanggalMulai)) {
+            $tabelQuery->whereDate('tanggal', '>=', $tanggalMulai);
+        } elseif (! empty($tanggalAkhir)) {
+            $tabelQuery->whereDate('tanggal', '<=', $tanggalAkhir);
+        } else {
+            // Default filter sesuai bulan dan tahun kalender aktif
+            $tabelQuery->whereYear('tanggal', $tahun)
+                ->whereMonth('tanggal', $bulan);
+        }
 
         if (! empty($filter['cari'])) {
             $cari = $filter['cari'];
@@ -70,31 +90,8 @@ class JadwalDriverController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        // 3. Data Matriks (opsional untuk view matriks)
-        $matriksData = [];
-        if ($viewMode === 'matriks') {
-            $daysInMonth = CarbonImmutable::createFromDate($tahun, $bulan, 1)->daysInMonth;
-            $allSchedules = (clone $tabelQuery)->get()->groupBy('karyawan_id');
-            $drivers = Karyawan::whereIn('id', $allSchedules->keys())->get()->keyBy('id');
-
-            foreach ($allSchedules as $karyawanId => $records) {
-                $k = $drivers->get($karyawanId);
-                if (! $k) continue;
-
-                $byDate = $records->keyBy(fn ($r) => $r->tanggal->day);
-                $rowHarian = [];
-                for ($d = 1; $d <= $daysInMonth; $d++) {
-                    $rec = $byDate->get($d);
-                    $rowHarian[$d] = $rec ? ($rec->status_jadwal === 'libur' ? 'L' : '1') : '-';
-                }
-
-                $matriksData[] = [
-                    'karyawan' => $k,
-                    'proyek' => $records->first()?->proyek ?? $k->proyek ?? 'Operasional MTU',
-                    'harian' => $rowHarian,
-                ];
-            }
-        }
+        // Cek apakah kalender dibuka otomatis via query (misal navigasi bulan atau ?view=kalender)
+        $bukaKalender = $request->input('view') === 'kalender' || $request->boolean('kalender');
 
         // Ambil daftar proyek unik dan seluruh driver aktif untuk form manual
         $daftarProyek = Karyawan::whereNotNull('proyek')->distinct()->pluck('proyek')->filter()->values()->all();
@@ -108,11 +105,10 @@ class JadwalDriverController extends Controller
         return view('admin.jadwal-driver.index', compact(
             'kalender',
             'daftarJadwalTabel',
-            'matriksData',
             'tahun',
             'bulan',
-            'viewMode',
             'filter',
+            'bukaKalender',
             'daftarProyek',
             'semuaDriver',
             'batchTerbaru'
