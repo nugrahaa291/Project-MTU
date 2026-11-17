@@ -40,8 +40,9 @@ class LowonganController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $lowongan = Lowongan::create($this->validasi($request));
+        $rute = $request->routeIs('admin.*') ? 'admin.lowongan.show' : 'hrd.lowongan.show';
 
-        return redirect()->route('hrd.lowongan.show', $lowongan)->with('success', 'Lowongan dibuat.');
+        return redirect()->route($rute, $lowongan)->with('success', 'Lowongan dibuat.');
     }
 
     public function show(Lowongan $lowongan): View
@@ -62,8 +63,9 @@ class LowonganController extends Controller
     public function update(Request $request, Lowongan $lowongan): RedirectResponse
     {
         $lowongan->update($this->validasi($request, $lowongan));
+        $rute = $request->routeIs('admin.*') ? 'admin.lowongan.show' : 'hrd.lowongan.show';
 
-        return redirect()->route('hrd.lowongan.show', $lowongan)->with('success', 'Lowongan diperbarui.');
+        return redirect()->route($rute, $lowongan)->with('success', 'Lowongan diperbarui.');
     }
 
     public function destroy(Lowongan $lowongan): RedirectResponse
@@ -73,8 +75,9 @@ class LowonganController extends Controller
         }
 
         $lowongan->delete();
+        $rute = request()->routeIs('admin.*') ? 'admin.lowongan.index' : 'hrd.lowongan.index';
 
-        return redirect()->route('hrd.lowongan.index')->with('success', 'Lowongan dihapus.');
+        return redirect()->route($rute)->with('success', 'Lowongan dihapus.');
     }
 
     private function daftarJabatan(?int $sertakanId = null)

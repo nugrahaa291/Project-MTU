@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,11 +38,18 @@ class LoginController extends Controller
         // Ganti ID sesi setelah login untuk mencegah session fixation
         $request->session()->regenerate();
 
+        ActivityLog::catat(Auth::user(), 'login', 'Pengguna masuk ke sistem (web)');
+
         return redirect()->intended(route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        if ($user) {
+            ActivityLog::catat($user, 'logout', 'Pengguna keluar dari sistem');
+        }
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

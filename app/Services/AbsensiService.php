@@ -139,6 +139,7 @@ class AbsensiService
         Karyawan::aktif()
             ->whereDate('tanggal_masuk', '<=', $tanggal->toDateString())
             ->whereDoesntHave('absensi', fn ($q) => $q->whereDate('tanggal', $tanggal->toDateString()))
+            ->whereDoesntHave('jadwalLibur', fn ($q) => $q->whereDate('tanggal', $tanggal->toDateString()))
             ->each(function (Karyawan $k) use ($tanggal, &$jumlah) {
                 try {
                     Absensi::create([

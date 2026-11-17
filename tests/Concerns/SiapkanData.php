@@ -13,6 +13,11 @@ use Illuminate\Http\UploadedFile;
 
 trait SiapkanData
 {
+    protected function admin(array $override = []): User
+    {
+        return User::factory()->admin()->create($override);
+    }
+
     protected function hrd(): User
     {
         return User::factory()->hrd()->create();

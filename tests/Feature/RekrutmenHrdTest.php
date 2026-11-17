@@ -162,20 +162,34 @@ class RekrutmenHrdTest extends TestCase
 
     public function test_halaman_hrd_dapat_dirender(): void
     {
+        $admin = $this->admin();
         $hrd = $this->hrd();
         $lowongan = $this->lowongan();
         $lamaran = $this->lamaran($lowongan, ['status' => 'seleksi']);
         $karyawan = $this->karyawan();
 
+        // Halaman yang diizinkan untuk HRD (Dashboard, Lowongan, Lamaran Masuk, Karyawan View Only, Publik)
         foreach ([
             route('hrd.dashboard'), route('hrd.lowongan.index'), route('hrd.lowongan.create'), route('hrd.lowongan.show', $lowongan),
             route('hrd.lowongan.edit', $lowongan), route('hrd.lamaran.index'), route('hrd.lamaran.show', $lamaran),
-            route('hrd.karyawan.index'), route('hrd.karyawan.create'), route('hrd.karyawan.show', $karyawan),
-            route('hrd.karyawan.edit', $karyawan), route('hrd.absensi.index'), route('hrd.absensi.rekap'),
-            route('hrd.kalender.index'), route('hrd.jabatan.index'), route('hrd.jabatan.create'),
+            route('hrd.karyawan.index'), route('hrd.karyawan.show', $karyawan),
             route('lowongan.index'), route('lowongan.show', $lowongan), route('lamaran.create', $lowongan), route('status.form'),
         ] as $url) {
             $this->actingAs($hrd)->get($url)->assertOk();
+        }
+
+        // HRD dilarang mengakses form create dan edit karyawan (View Only)
+        $this->actingAs($hrd)->get(route('hrd.karyawan.create'))->assertForbidden();
+        $this->actingAs($hrd)->get(route('hrd.karyawan.edit', $karyawan))->assertForbidden();
+
+        // Halaman Admin (Akses Penuh termasuk Karyawan CRUD, Absensi, Kalender, Jabatan)
+        foreach ([
+            route('admin.dashboard'), route('admin.lowongan.index'), route('admin.lamaran.index'),
+            route('admin.karyawan.index'), route('admin.karyawan.create'), route('admin.karyawan.show', $karyawan),
+            route('admin.karyawan.edit', $karyawan), route('admin.absensi.index'), route('admin.absensi.rekap'),
+            route('admin.kalender.index'), route('admin.jabatan.index'), route('admin.jabatan.create'),
+        ] as $url) {
+            $this->actingAs($admin)->get($url)->assertOk();
         }
     }
 }

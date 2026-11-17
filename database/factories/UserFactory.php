@@ -47,12 +47,32 @@ class UserFactory extends Factory
     }
 
     /**
+     * Pengguna dengan peran Admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => Role::Admin,
+        ]);
+    }
+
+    /**
      * Pengguna dengan peran HRD.
      */
     public function hrd(): static
     {
         return $this->state(fn (array $attributes) => [
             'role' => Role::Hrd,
+        ]);
+    }
+
+    /**
+     * Pengguna dengan peran Karyawan.
+     */
+    public function karyawan(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => Role::Karyawan,
         ]);
     }
 }

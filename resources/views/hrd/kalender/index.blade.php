@@ -2,6 +2,7 @@
 @section('judul', 'Hari Libur')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2">
             <form method="GET" class="mb-3 flex items-center gap-2">
@@ -17,7 +18,7 @@
                                 <td class="whitespace-nowrap">{{ $l->tanggal->translatedFormat('l, d F Y') }}</td>
                                 <td>{{ $l->nama }}</td>
                                 <td class="text-right">
-                                    <form method="POST" action="{{ route('hrd.kalender.destroy', $l) }}" data-konfirmasi="Hapus hari libur ini?">
+                                    <form method="POST" action="{{ route($rute.'.kalender.destroy', $l) }}" data-konfirmasi="Hapus hari libur ini?">
                                         @csrf @method('DELETE')<button class="btn btn-danger btn-sm">Hapus</button>
                                     </form>
                                 </td>
@@ -30,7 +31,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('hrd.kalender.store') }}" class="card h-fit space-y-4 p-5">
+        <form method="POST" action="{{ route($rute.'.kalender.store') }}" class="card h-fit space-y-4 p-5">
             @csrf
             <h2 class="font-bold">Tambah Hari Libur</h2>
             <x-field name="tanggal" label="Tanggal" type="date" required />

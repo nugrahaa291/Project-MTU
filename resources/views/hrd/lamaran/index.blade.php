@@ -2,6 +2,7 @@
 @section('judul', 'Lamaran Masuk')
 
 @section('content')
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <form method="GET" class="card mb-4 grid gap-3 p-4 sm:grid-cols-4">
         <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIK / kode" class="input">
         <select name="lowongan_id" class="input">
@@ -30,7 +31,7 @@
                         <td class="font-mono text-xs">{{ $l->kode }}</td>
                         <td><x-badge :warna="$l->status->warna()">{{ $l->status->label() }}</x-badge></td>
                         <td class="whitespace-nowrap text-gray-500">{{ $l->created_at->format('d/m/Y H:i') }}</td>
-                        <td class="text-right"><a href="{{ route('hrd.lamaran.show', $l) }}" class="btn btn-outline btn-sm">Tinjau</a></td>
+                        <td class="text-right"><a href="{{ route($rute.'.lamaran.show', $l) }}" class="btn btn-outline btn-sm">Tinjau</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="py-8 text-center text-gray-500">Tidak ada lamaran.</td></tr>

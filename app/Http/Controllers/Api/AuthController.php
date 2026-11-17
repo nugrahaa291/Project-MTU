@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,8 @@ class AuthController extends Controller
         // Satu perangkat = satu token. Login ulang di perangkat yang sama mengganti token lama.
         $user->tokens()->where('name', $data['device_name'])->delete();
         $token = $user->createToken($data['device_name'], ['*'], now()->addDays(30));
+
+        ActivityLog::catat($user, 'login_api', 'Login via API mobile: '.$data['device_name']);
 
         return response()->json([
             'token' => $token->plainTextToken,

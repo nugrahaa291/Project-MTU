@@ -34,8 +34,12 @@ class KaryawanController extends Controller
     }
 
     /** Tambah karyawan manual (untuk pegawai lama yang tidak lewat portal lamaran). */
-    public function create(): View
+    public function create(Request $request): View
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. HRD hanya memiliki izin melihat data karyawan (View Only).');
+        }
+
         return view('hrd.karyawan.create', [
             'jabatan' => Jabatan::where('aktif', true)->orderBy('nama')->get(),
         ]);
@@ -43,6 +47,10 @@ class KaryawanController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. HRD tidak memiliki izin menambah karyawan.');
+        }
+
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')],
@@ -61,7 +69,9 @@ class KaryawanController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('hrd.karyawan.show', $karyawan)
+        $rute = $request->routeIs('admin.*') ? 'admin.karyawan.show' : 'hrd.karyawan.show';
+
+        return redirect()->route($rute, $karyawan)
             ->with('success', 'Karyawan ditambahkan.')
             ->with('password_sementara', $password);
     }
@@ -74,8 +84,12 @@ class KaryawanController extends Controller
         return view('hrd.karyawan.show', compact('karyawan', 'absensi'));
     }
 
-    public function edit(Karyawan $karyawan): View
+    public function edit(Request $request, Karyawan $karyawan): View
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. HRD hanya memiliki izin melihat data karyawan (View Only).');
+        }
+
         return view('hrd.karyawan.edit', [
             'karyawan' => $karyawan->load('user'),
             'jabatan' => Jabatan::where('aktif', true)->orWhere('id', $karyawan->jabatan_id)->orderBy('nama')->get(),
@@ -84,6 +98,10 @@ class KaryawanController extends Controller
 
     public function update(Request $request, Karyawan $karyawan): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. HRD tidak memiliki izin mengubah data atau status karyawan.');
+        }
+
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'no_hp' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
@@ -101,14 +119,21 @@ class KaryawanController extends Controller
             $this->service->setAktif($karyawan, $aktif);
         }
 
-        return redirect()->route('hrd.karyawan.show', $karyawan)->with('success', 'Data karyawan diperbarui.');
+        $rute = $request->routeIs('admin.*') ? 'admin.karyawan.show' : 'hrd.karyawan.show';
+
+        return redirect()->route($rute, $karyawan)->with('success', 'Data karyawan diperbarui.');
     }
 
-    public function resetPassword(Karyawan $karyawan): RedirectResponse
+    public function resetPassword(Request $request, Karyawan $karyawan): RedirectResponse
     {
-        $password = $this->service->resetPassword($karyawan);
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. HRD tidak memiliki izin mereset password karyawan.');
+        }
 
-        return redirect()->route('hrd.karyawan.show', $karyawan)
+        $password = $this->service->resetPassword($karyawan);
+        $rute = $request->routeIs('admin.*') ? 'admin.karyawan.show' : 'hrd.karyawan.show';
+
+        return redirect()->route($rute, $karyawan)
             ->with('success', 'Password direset. Karyawan wajib menggantinya saat login berikutnya.')
             ->with('password_sementara', $password);
     }

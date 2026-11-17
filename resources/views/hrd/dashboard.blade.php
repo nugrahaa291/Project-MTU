@@ -7,13 +7,11 @@
             ['Lowongan dibuka', $statistik['lowongan_dibuka'], route('hrd.lowongan.index')],
             ['Lamaran baru', $statistik['lamaran_baru'], route('hrd.lamaran.index', ['status' => 'diajukan'])],
             ['Dalam seleksi', $statistik['lamaran_seleksi'], route('hrd.lamaran.index', ['status' => 'seleksi'])],
-            ['Karyawan aktif', $statistik['karyawan_aktif'], route('hrd.karyawan.index')],
-            ['Sudah absen hari ini', $statistik['sudah_absen'], route('hrd.absensi.index')],
-            ['Terlambat hari ini', $statistik['terlambat'], route('hrd.absensi.index', ['status' => 'terlambat'])],
+            ['Karyawan terdaftar', $statistik['karyawan_aktif'], route('hrd.karyawan.index')],
         ];
     @endphp
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @foreach ($kartu as [$label, $angka, $url])
             <a href="{{ $url }}" class="card block border-l-4 border-l-brand p-5 transition hover:shadow-md">
                 <p class="text-sm text-gray-500">{{ $label }}</p>

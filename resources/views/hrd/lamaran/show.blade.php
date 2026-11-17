@@ -2,8 +2,11 @@
 @section('judul', 'Detail Lamaran')
 
 @section('content')
-    @php $status = $lamaran->status; @endphp
-    <a href="{{ route('hrd.lamaran.index') }}" class="mb-3 inline-block text-sm text-gray-500 hover:text-brand">&larr; Daftar lamaran</a>
+    @php
+        $status = $lamaran->status;
+        $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd';
+    @endphp
+    <a href="{{ route($rute.'.lamaran.index') }}" class="mb-3 inline-block text-sm text-gray-500 hover:text-brand">&larr; Daftar lamaran</a>
 
     <div class="grid gap-6 xl:grid-cols-3">
         {{-- DATA PELAMAR --}}
@@ -39,7 +42,7 @@
                 <div class="flex flex-wrap gap-2">
                     @foreach (\App\Models\Lamaran::DOKUMEN as $kolom => $label)
                         @if ($lamaran->{$kolom})
-                            <a href="{{ route('hrd.lamaran.dokumen', [$lamaran, $kolom]) }}" target="_blank" class="btn btn-outline btn-sm">{{ $label }} &nearr;</a>
+                            <a href="{{ route($rute.'.lamaran.dokumen', [$lamaran, $kolom]) }}" target="_blank" class="btn btn-outline btn-sm">{{ $label }} &nearr;</a>
                         @else
                             <span class="rounded-md border border-dashed border-gray-300 px-3 py-1.5 text-xs text-gray-400">{{ $label }} (tidak ada)</span>
                         @endif
@@ -64,7 +67,7 @@
             </div>
 
             @if ($status === \App\Enums\StatusLamaran::Diajukan)
-                <form method="POST" action="{{ route('hrd.lamaran.proses', $lamaran) }}" class="card p-5">
+                <form method="POST" action="{{ route($rute.'.lamaran.proses', $lamaran) }}" class="card p-5">
                     @csrf
                     <p class="mb-3 text-sm text-gray-600">Berkas sudah ditinjau dan layak lanjut ke tahap seleksi?</p>
                     <button class="btn btn-primary w-full">Proses ke Seleksi</button>
@@ -72,7 +75,7 @@
             @endif
 
             @if ($status === \App\Enums\StatusLamaran::Seleksi)
-                <form method="POST" action="{{ route('hrd.lamaran.terima', $lamaran) }}" class="card space-y-3 border-green-200 p-5" data-konfirmasi="Terima pelamar ini dan buat akun karyawan?">
+                <form method="POST" action="{{ route($rute.'.lamaran.terima', $lamaran) }}" class="card space-y-3 border-green-200 p-5" data-konfirmasi="Terima pelamar ini dan buat akun karyawan?">
                     @csrf
                     <h3 class="font-bold text-green-700">Terima (Hired)</h3>
                     <p class="text-xs text-gray-500">Sistem otomatis membuat akun karyawan dengan password sementara.</p>
@@ -84,7 +87,7 @@
             @endif
 
             @if (in_array($status, [\App\Enums\StatusLamaran::Diajukan, \App\Enums\StatusLamaran::Seleksi]))
-                <form method="POST" action="{{ route('hrd.lamaran.tolak', $lamaran) }}" class="card space-y-3 p-5" data-konfirmasi="Tolak lamaran ini? Keputusan tidak dapat dibatalkan.">
+                <form method="POST" action="{{ route($rute.'.lamaran.tolak', $lamaran) }}" class="card space-y-3 p-5" data-konfirmasi="Tolak lamaran ini? Keputusan tidak dapat dibatalkan.">
                     @csrf
                     <h3 class="font-bold text-red-700">Tolak</h3>
                     <x-field name="catatan" label="Alasan (internal)" as="textarea" rows="2" />
@@ -93,7 +96,7 @@
             @endif
 
             @if ($lamaran->karyawan)
-                <a href="{{ route('hrd.karyawan.show', $lamaran->karyawan) }}" class="btn btn-outline w-full">Lihat Data Karyawan &rarr;</a>
+                <a href="{{ route($rute.'.karyawan.show', $lamaran->karyawan) }}" class="btn btn-outline w-full">Lihat Data Karyawan &rarr;</a>
             @endif
         </aside>
     </div>
