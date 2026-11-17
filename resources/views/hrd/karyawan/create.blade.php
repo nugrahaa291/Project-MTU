@@ -13,8 +13,8 @@
             <x-field name="email" label="Email (untuk login)" type="email" required />
             <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
             <x-field name="no_hp" label="Nomor HP" required />
-            <x-field name="jabatan_id" label="Jabatan" as="select" required>
-                <option value="">Pilih...</option>
+            <x-field name="jabatan_id" label="Unit / Penugasan Armada" as="select" required>
+                <option value="">Pilih Unit...</option>
                 @foreach ($jabatan as $j)
                     <option value="{{ $j->id }}" @selected(old('jabatan_id') == $j->id)>{{ $j->nama }}</option>
                 @endforeach

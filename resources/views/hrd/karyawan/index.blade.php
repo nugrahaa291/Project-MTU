@@ -20,7 +20,7 @@
 
     <div class="table-wrap">
         <table class="table-base">
-            <thead><tr><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Tgl Masuk</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>NIP</th><th>Nama</th><th>Unit</th><th>Tgl Masuk</th><th>Status</th><th></th></tr></thead>
             <tbody>
                 @forelse ($karyawan as $k)
                     <tr>

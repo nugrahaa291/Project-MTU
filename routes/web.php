@@ -85,8 +85,9 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
             Route::post('absensi', [Hrd\AbsensiController::class, 'store'])->name('absensi.store');
             Route::get('absensi/{absensi}/foto/{jenis}', [Hrd\AbsensiController::class, 'foto'])->name('absensi.foto');
 
-            // Data Master untuk Admin
+            // Data Master untuk Admin (Unit Operasional / Armada MTU)
             Route::resource('jabatan', Hrd\JabatanController::class)->except('show');
+            Route::resource('unit', Hrd\JabatanController::class)->except('show');
 
             // Jadwal Libur Driver (Operasional Cabang MTU)
             Route::get('jadwal-driver', [Admin\JadwalDriverController::class, 'index'])->name('jadwal-driver.index');

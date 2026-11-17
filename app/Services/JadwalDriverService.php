@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\JadwalDriver;
 use App\Models\JadwalRiwayatPerubahan;
 use App\Models\Karyawan;
+use App\Models\Pengaturan;
 use App\Models\ProyekKebutuhanDriver;
 use App\Models\User;
 use Carbon\Carbon;
@@ -110,7 +111,7 @@ class JadwalDriverService
     }
 
     /**
-     * Memvalidasi dan menyimpan input libur manual (mendadak) dari cabang.
+     * Memvalidasi dan menyimpan input libur manual (mendadak) dari cabang dengan aturan jatah 7 hari & tukar libur tetap.
      */
     public function tambahLiburManual(array $data, User $admin): array
     {
@@ -127,11 +128,66 @@ class JadwalDriverService
 
         $period = CarbonPeriod::create($tglMulai, $tglSelesai);
         $minKebutuhan = ProyekKebutuhanDriver::kebutuhanProyek($proyek);
+        $defaultJatahLibur = (int) Pengaturan::ambil('jatah_libur_driver_bulanan', '7');
 
         $jadwalDibuat = [];
         $peringatan = [];
+        $infoTukar = null;
 
-        DB::transaction(function () use ($period, $karyawan, $proyek, $data, $admin, $minKebutuhan, &$jadwalDibuat, &$peringatan) {
+        DB::transaction(function () use ($period, $karyawan, $proyek, $data, $admin, $minKebutuhan, $defaultJatahLibur, &$jadwalDibuat, &$peringatan, &$infoTukar) {
+            $tglPertama = $period->getStartDate();
+            $tahun = $tglPertama->year;
+            $bulan = $tglPertama->month;
+
+            // 0. Cek jatah libur driver pada bulan terkait (default 7 hari)
+            $totalLiburBulanIni = JadwalDriver::where('karyawan_id', $karyawan->id)
+                ->whereYear('tanggal', $tahun)
+                ->whereMonth('tanggal', $bulan)
+                ->where('status_jadwal', 'libur')
+                ->count();
+
+            // Jika jatah libur sudah mencapai/melebihi default (7 hari) dan admin belum memilih libur tetap yang diganti
+            if ($totalLiburBulanIni >= $defaultJatahLibur && empty($data['tanggal_tukar'])) {
+                throw new \DomainException("Jatah libur driver {$karyawan->nama} bulan ini sudah mencapai {$totalLiburBulanIni} hari (default: {$defaultJatahLibur} hari). Sesuai aturan, izin dadakan harus mengganti salah satu hari libur tetap yang sudah ditentukan menjadi hari kerja.");
+            }
+
+            // Jika ada hari libur tetap yang ditukar
+            if (! empty($data['tanggal_tukar'])) {
+                $tglTukar = CarbonImmutable::parse($data['tanggal_tukar']);
+                $tglTukarStr = $tglTukar->toDateString();
+
+                if ($tglTukarStr === $tglPertama->toDateString()) {
+                    throw new \DomainException('Hari libur tetap yang diganti tidak boleh sama dengan tanggal izin dadakan.');
+                }
+
+                $jadwalTukar = JadwalDriver::where('karyawan_id', $karyawan->id)
+                    ->whereDate('tanggal', $tglTukarStr)
+                    ->where('status_jadwal', 'libur')
+                    ->first();
+
+                if (! $jadwalTukar) {
+                    throw new \DomainException("Tanggal {$tglTukar->translatedFormat('d M Y')} bukan merupakan hari libur terjadwal untuk driver {$karyawan->nama}.");
+                }
+
+                // Ubah status hari libur tetap yang diganti menjadi hari KERJA
+                $jadwalTukar->status_jadwal = 'kerja';
+                $jadwalTukar->keterangan = 'Hari kerja pengganti izin dadakan tanggal ' . $tglPertama->translatedFormat('d M Y');
+                $jadwalTukar->save();
+
+                // Catat audit riwayat perubahan jadwal yang ditukar
+                JadwalRiwayatPerubahan::create([
+                    'jadwal_id' => $jadwalTukar->id,
+                    'karyawan_id' => $karyawan->id,
+                    'tanggal' => $tglTukarStr,
+                    'status_sebelumnya' => 'libur',
+                    'status_baru' => 'kerja',
+                    'diubah_oleh' => $admin->id,
+                    'alasan' => 'Ditukar menjadi hari kerja karena izin dadakan tanggal ' . $tglPertama->translatedFormat('d M Y') . ' (' . ($data['keterangan'] ?? 'Izin dadakan') . ')',
+                ]);
+
+                $infoTukar = $tglTukar->translatedFormat('d M Y');
+            }
+
             foreach ($period as $date) {
                 $tglStr = $date->toDateString();
 
@@ -183,6 +239,11 @@ class JadwalDriverService
                     $peringatan[] = "Kebutuhan minimum driver aktif proyek {$proyek} pada {$tglStr} belum terpenuhi (tersisa {$driverAktif} aktif, min: {$minKebutuhan}). Jadwal ditandai Perlu Verifikasi Admin.";
                 }
 
+                $keteranganLibur = $data['keterangan'] ?? 'Izin / libur dadakan cabang';
+                if ($infoTukar) {
+                    $keteranganLibur .= " (Tukar libur tetap tanggal {$infoTukar})";
+                }
+
                 $jadwal = JadwalDriver::updateOrCreate(
                     [
                         'karyawan_id' => $karyawan->id,
@@ -195,7 +256,7 @@ class JadwalDriverService
                         'driver_pengganti_id' => $penggantiId,
                         'status_verifikasi' => $statusVerifikasi,
                         'alasan_pengecualian' => $data['alasan_pengecualian'] ?? null,
-                        'keterangan' => $data['keterangan'] ?? 'Libur mendadak diajukan cabang',
+                        'keterangan' => $keteranganLibur,
                         'created_by' => $admin->id,
                     ]
                 );
@@ -210,7 +271,7 @@ class JadwalDriverService
                     'driver_pengganti_sebelumnya' => $penggantiLama,
                     'driver_pengganti_baru' => $penggantiId,
                     'diubah_oleh' => $admin->id,
-                    'alasan' => $data['alasan_perubahan'] ?? 'Pengajuan libur manual cabang',
+                    'alasan' => $data['alasan_perubahan'] ?? ($infoTukar ? "Izin dadakan tukar dari {$infoTukar}" : 'Pengajuan libur manual cabang'),
                 ]);
 
                 $jadwalDibuat[] = $jadwal;
@@ -220,6 +281,7 @@ class JadwalDriverService
         return [
             'sukses' => true,
             'total_hari' => count($jadwalDibuat),
+            'info_tukar' => $infoTukar,
             'peringatan' => $peringatan,
         ];
     }

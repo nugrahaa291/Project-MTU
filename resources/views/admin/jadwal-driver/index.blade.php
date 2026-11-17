@@ -150,11 +150,11 @@
                 <input type="text" name="cari" value="{{ $filter['cari'] ?? '' }}" placeholder="Ketik nama, NIP, atau NIK driver..." class="input w-full text-xs">
             </div>
 
-            {{-- 2. Filter Proyek --}}
+            {{-- 2. Filter Unit / Proyek --}}
             <div class="w-56 min-w-[180px]">
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Proyek</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Unit / Proyek</label>
                 <select name="proyek" class="input w-full text-xs">
-                    <option value="">Semua Proyek</option>
+                    <option value="">Semua Unit</option>
                     @foreach ($daftarProyek as $p)
                         <option value="{{ $p }}" {{ ($filter['proyek'] ?? '') === $p ? 'selected' : '' }}>{{ $p }}</option>
                     @endforeach
@@ -201,7 +201,7 @@
                         <th class="whitespace-nowrap">Nama Driver</th>
                         <th class="whitespace-nowrap">NIP</th>
                         <th class="whitespace-nowrap">NIK MTU</th>
-                        <th class="whitespace-nowrap">Proyek</th>
+                        <th class="whitespace-nowrap">Unit Armada</th>
                         <th class="whitespace-nowrap">Tanggal Libur</th>
                         <th class="text-center whitespace-nowrap">Status</th>
                         <th class="whitespace-nowrap">Driver Pengganti</th>
@@ -318,7 +318,10 @@
         <form method="POST" action="{{ route('admin.jadwal-driver.manual') }}" class="p-6 space-y-4">
             @csrf
             <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                <h3 class="text-lg font-bold text-gray-900">+ Tambah Libur Driver</h3>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">+ Tambah Libur / Izin Dadakan Driver</h3>
+                    <p class="text-xs text-gray-500">Jatah libur default {{ $defaultJatahLibur }} hari/bulan. Izin dadakan dapat menukar hari libur tetap yang sudah ditentukan.</p>
+                </div>
                 <button type="button" onclick="document.getElementById('modalTambahManual').close()" class="btn btn-outline btn-sm">✕</button>
             </div>
 
@@ -327,31 +330,53 @@
                 <select name="karyawan_id" id="manual_karyawan_id" required class="input w-full text-xs" onchange="updateDriverInfo(this)">
                     <option value="">-- Pilih Driver --</option>
                     @foreach ($semuaDriver as $d)
-                        <option value="{{ $d->id }}" data-nip="{{ $d->nip }}" data-nik="{{ $d->nik }}" data-proyek="{{ $d->proyek }}">
-                            {{ $d->nama }} ({{ $d->nip ?: $d->nik }})
+                        <option value="{{ $d->id }}" data-nip="{{ $d->nip }}" data-nik="{{ $d->nik }}" data-proyek="{{ $d->proyek }}" data-unit="{{ $d->jabatan?->nama ?? $d->proyek }}">
+                            {{ $d->nama }} ({{ $d->nip ?: $d->nik }}) &bull; Unit {{ $d->jabatan?->nama ?? $d->proyek }}
                         </option>
                     @endforeach
                 </select>
-                <div id="infoDriverTerpilih" class="mt-1 text-[11px] text-gray-500 hidden">
-                    NIP: <span id="infoNip">-</span> &bull; NIK: <span id="infoNik">-</span> &bull; Proyek: <span id="infoProyek">-</span>
+                <div id="infoDriverTerpilih" class="mt-2 text-[11px] text-gray-600 hidden">
+                    <p>NIP: <span id="infoNip" class="font-mono font-semibold">-</span> &bull; NIK: <span id="infoNik" class="font-mono font-semibold">-</span> &bull; Unit: <span id="infoProyek" class="font-semibold">-</span></p>
+                    <div id="badgeJatahLibur" class="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        Jatah Libur: - / {{ $defaultJatahLibur }} hari
+                    </div>
                 </div>
+            </div>
+
+            {{-- OPSI TUKAR HARI LIBUR TETAP (ALUR REVISI IZIN DADAKAN & JATAH 7 HARI) --}}
+            <div id="containerTukarLibur" class="p-3 bg-amber-50/80 rounded-lg border border-amber-200 hidden">
+                <div class="flex items-start gap-2 mb-2">
+                    <span class="text-amber-600 font-bold text-base leading-none">🔄</span>
+                    <div>
+                        <label class="block text-xs font-bold text-amber-900">
+                            Hari Libur Tetap yang Diganti (Tukar Menjadi Hari Kerja)
+                            <span id="tukarRequiredStar" class="text-rose-500 hidden">*</span>
+                        </label>
+                        <p id="tukarKeterangan" class="text-[11px] text-amber-800 leading-tight mt-0.5">
+                            Pilih salah satu tanggal libur tetap driver yang sudah ditentukan untuk diganti menjadi hari kerja agar jatah libur bulanan tetap sesuai kuota ({{ $defaultJatahLibur }} hari).
+                        </p>
+                    </div>
+                </div>
+                <select name="tanggal_tukar" id="selectTanggalTukar" class="input w-full text-xs bg-white">
+                    <option value="">-- Tanpa Tukar (Jatah Masih Tersedia) --</option>
+                </select>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Mulai Libur <span class="text-rose-500">*</span></label>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Izin / Libur Dadakan <span class="text-rose-500">*</span></label>
                     <input type="date" name="tanggal_mulai" required value="{{ date('Y-m-d') }}" class="input w-full text-xs">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Selesai (Opsional)</label>
                     <input type="date" name="tanggal_selesai" class="input w-full text-xs" placeholder="Kosongkan jika 1 hari">
-                    <p class="text-[10px] text-gray-400 mt-0.5">Isi jika libur rentang beberapa hari.</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Isi jika izin rentang beberapa hari.</p>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Proyek Penugasan</label>
-                <input type="text" name="proyek" id="manual_proyek" placeholder="Contoh: Wingbox, Trailer, atau Operasional MTU" class="input w-full text-xs">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Unit Armada / Proyek Penugasan</label>
+                <input type="text" name="proyek" id="manual_proyek" placeholder="Contoh: Wingbox, Trailer, atau Logistik" class="input w-full text-xs">
             </div>
 
             <div>
@@ -359,20 +384,20 @@
                 <select name="driver_pengganti_id" class="input w-full text-xs">
                     <option value="">-- Tanpa Driver Pengganti --</option>
                     @foreach ($semuaDriver as $d)
-                        <option value="{{ $d->id }}">{{ $d->nama }} ({{ $d->nip ?: $d->nik }})</option>
+                        <option value="{{ $d->id }}">{{ $d->nama }} ({{ $d->nip ?: $d->nik }}) &bull; Unit {{ $d->jabatan?->nama ?? $d->proyek }}</option>
                     @endforeach
                 </select>
-                <p class="text-[10px] text-gray-400 mt-0.5">Wajib dipilih bila jumlah driver aktif proyek di bawah batas minimum.</p>
+                <p class="text-[10px] text-gray-400 mt-0.5">Wajib dipilih bila jumlah driver aktif unit di bawah batas minimum.</p>
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Alasan / Keterangan Libur</label>
-                <textarea name="keterangan" rows="2" placeholder="Keperluan mendadak keluarga, urusan dinas, dll." class="input w-full text-xs"></textarea>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Alasan / Keterangan Izin Dadakan</label>
+                <textarea name="keterangan" rows="2" placeholder="Keperluan keluarga mendadak, urusan darurat, izin sakit, dll." class="input w-full text-xs"></textarea>
             </div>
 
             <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button type="button" onclick="document.getElementById('modalTambahManual').close()" class="btn btn-outline btn-sm">Batal</button>
-                <button type="submit" class="btn btn-primary btn-sm">Simpan Jadwal Libur</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan Izin &amp; Tukar Libur</button>
             </div>
         </form>
     </dialog>
@@ -449,21 +474,85 @@
             window.location.href = url.toString();
         }
 
+        const dataLiburDriver = @json($jadwalLiburPerDriver);
+        const defaultJatahLibur = {{ $defaultJatahLibur }};
+
         function updateDriverInfo(select) {
             const opt = select.options[select.selectedIndex];
             const infoDiv = document.getElementById('infoDriverTerpilih');
             const proyekInput = document.getElementById('manual_proyek');
+            const containerTukar = document.getElementById('containerTukarLibur');
+            const selectTukar = document.getElementById('selectTanggalTukar');
+            const badgeJatah = document.getElementById('badgeJatahLibur');
+            const starRequired = document.getElementById('tukarRequiredStar');
+            const keteranganTukar = document.getElementById('tukarKeterangan');
 
             if (!opt.value) {
-                infoDiv.classList.add('hidden');
+                if (infoDiv) infoDiv.classList.add('hidden');
+                if (containerTukar) containerTukar.classList.add('hidden');
                 return;
             }
 
-            document.getElementById('infoNip').textContent = opt.dataset.nip || '-';
-            document.getElementById('infoNik').textContent = opt.dataset.nik || '-';
-            document.getElementById('infoProyek').textContent = opt.dataset.proyek || 'Operasional MTU';
-            proyekInput.value = opt.dataset.proyek || 'Operasional MTU';
-            infoDiv.classList.remove('hidden');
+            const driverId = opt.value;
+            const nip = opt.dataset.nip || '-';
+            const nik = opt.dataset.nik || '-';
+            const unit = opt.dataset.unit || opt.dataset.proyek || 'Operasional MTU';
+
+            document.getElementById('infoNip').textContent = nip;
+            document.getElementById('infoNik').textContent = nik;
+            document.getElementById('infoProyek').textContent = unit;
+            if (proyekInput) proyekInput.value = opt.dataset.proyek || unit;
+            if (infoDiv) infoDiv.classList.remove('hidden');
+
+            // Cek daftar libur terjadwal driver di bulan aktif
+            const daftarLibur = dataLiburDriver[driverId] || [];
+            const totalLibur = daftarLibur.length;
+
+            if (badgeJatah) {
+                badgeJatah.textContent = `Jatah Libur Bulan Ini: ${totalLibur} / ${defaultJatahLibur} hari`;
+                if (totalLibur >= defaultJatahLibur) {
+                    badgeJatah.className = 'mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+                } else {
+                    badgeJatah.className = 'mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+                }
+            }
+
+            if (containerTukar && selectTukar) {
+                selectTukar.innerHTML = '';
+
+                if (totalLibur >= defaultJatahLibur) {
+                    // Wajib tukar karena kuota 7 hari sudah penuh
+                    if (starRequired) starRequired.classList.remove('hidden');
+                    selectTukar.required = true;
+                    if (keteranganTukar) {
+                        keteranganTukar.innerHTML = `<span class="font-bold text-rose-700">Jatah libur driver sudah penuh (${totalLibur}/${defaultJatahLibur} hari).</span> Wajib memilih 1 hari libur tetap untuk ditukar menjadi hari kerja agar kuota tetap ${defaultJatahLibur} hari.`;
+                    }
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.textContent = '-- Wajib Pilih Hari Libur Tetap yang Diganti --';
+                    selectTukar.appendChild(defaultOpt);
+                } else {
+                    // Opsional tukar bila kuota belum penuh
+                    if (starRequired) starRequired.classList.add('hidden');
+                    selectTukar.required = false;
+                    if (keteranganTukar) {
+                        keteranganTukar.innerHTML = `Jatah libur terpakai: ${totalLibur}/${defaultJatahLibur} hari. Admin bebas menentukan hari libur tetap mana yang ingin ditukar menjadi hari kerja, atau dibiarkan tanpa tukar.`;
+                    }
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = '';
+                    defaultOpt.textContent = `-- Tanpa Tukar (Jatah Masih Tersedia: ${totalLibur}/${defaultJatahLibur}) --`;
+                    selectTukar.appendChild(defaultOpt);
+                }
+
+                daftarLibur.forEach(item => {
+                    const optItem = document.createElement('option');
+                    optItem.value = item.tanggal;
+                    optItem.textContent = `${item.tanggal_formatted} (Libur Tetap)`;
+                    selectTukar.appendChild(optItem);
+                });
+
+                containerTukar.classList.remove('hidden');
+            }
         }
 
         function bukaModalPengganti(jadwalId, namaDriver, tanggal, penggantiId) {

@@ -45,9 +45,7 @@ class DatabaseSeeder extends Seeder
             $hrd->save();
         }
 
-        foreach (['Staff Administrasi', 'Staff IT', 'Driver', 'Supervisor Operasional'] as $nama) {
-            Jabatan::firstOrCreate(['nama' => $nama], ['aktif' => true]);
-        }
+        $this->call(UnitSeeder::class);
 
         Lowongan::firstOrCreate(['judul' => 'Staff IT Support'], [
             'jabatan_id' => Jabatan::where('nama', 'Staff IT')->value('id'),

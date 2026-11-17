@@ -535,6 +535,97 @@ class JadwalDriverTest extends TestCase
         ]);
     }
 
+    public function test_izin_dadakan_wajib_tukar_hari_libur_tetap_jika_jatah_7_hari_penuh(): void
+    {
+        $admin = $this->admin();
+        $driver = $this->buatDriver('Diki Maulana', 'MTU2001', '3215010101900001', 'Wingbox');
+
+        // Buat 7 jadwal libur tetap untuk Diki di bulan September 2026
+        $tglLibur = ['2026-09-02', '2026-09-06', '2026-09-09', '2026-09-13', '2026-09-16', '2026-09-20', '2026-09-23'];
+        foreach ($tglLibur as $tgl) {
+            JadwalDriver::create([
+                'karyawan_id' => $driver->id,
+                'tanggal' => $tgl,
+                'status_jadwal' => 'libur',
+                'sumber' => 'import_pusat',
+                'proyek' => 'Wingbox',
+            ]);
+        }
+
+        // Coba ajukan libur dadakan di tanggal 25 tanpa memilih tanggal tukar
+        $res = $this->actingAs($admin)->post(route('admin.jadwal-driver.manual'), [
+            'karyawan_id' => $driver->id,
+            'tanggal_mulai' => '2026-09-25',
+            'proyek' => 'Wingbox',
+            'keterangan' => 'Izin dadakan',
+        ]);
+
+        $res->assertSessionHas('error');
+        $this->assertStringContainsString('sudah mencapai 7 hari', (string) session('error'));
+        $this->assertStringContainsString('harus mengganti salah satu hari libur tetap', (string) session('error'));
+    }
+
+    public function test_izin_dadakan_berhasil_menukar_hari_libur_tetap_menjadi_hari_kerja(): void
+    {
+        $admin = $this->admin();
+        $driver = $this->buatDriver('Teguh Setiawan', 'MTU2002', '3215010202920002', 'Trailer');
+
+        // Buat 7 jadwal libur tetap untuk Teguh di bulan September 2026
+        $tglLibur = ['2026-09-01', '2026-09-05', '2026-09-08', '2026-09-12', '2026-09-15', '2026-09-19', '2026-09-22'];
+        foreach ($tglLibur as $tgl) {
+            JadwalDriver::create([
+                'karyawan_id' => $driver->id,
+                'tanggal' => $tgl,
+                'status_jadwal' => 'libur',
+                'sumber' => 'import_pusat',
+                'proyek' => 'Trailer',
+            ]);
+        }
+
+        // Ajukan libur dadakan di tanggal 25 September dengan menukar libur tetap tanggal 22 September
+        $res = $this->actingAs($admin)->post(route('admin.jadwal-driver.manual'), [
+            'karyawan_id' => $driver->id,
+            'tanggal_mulai' => '2026-09-25',
+            'tanggal_tukar' => '2026-09-22',
+            'proyek' => 'Trailer',
+            'keterangan' => 'Izin mendadak urusan keluarga',
+        ]);
+
+        $res->assertRedirect();
+        $res->assertSessionHas('success');
+
+        // Tanggal izin dadakan (25 Sep) harus menjadi libur
+        $this->assertDatabaseHas('jadwal_driver', [
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-25 00:00:00',
+            'status_jadwal' => 'libur',
+        ]);
+
+        // Tanggal yang ditukar (22 Sep) harus berubah menjadi KERJA
+        $this->assertDatabaseHas('jadwal_driver', [
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-22 00:00:00',
+            'status_jadwal' => 'kerja',
+        ]);
+
+        // Total hari libur Teguh di September tetap 7 hari (tidak bertambah jadi 8)
+        $totalLibur = JadwalDriver::where('karyawan_id', $driver->id)
+            ->whereYear('tanggal', 2026)
+            ->whereMonth('tanggal', 9)
+            ->where('status_jadwal', 'libur')
+            ->count();
+        $this->assertSame(7, $totalLibur);
+
+        // Audit riwayat perubahan harus mencatat pertukaran tanggal 22 Sep
+        $this->assertDatabaseHas('jadwal_riwayat_perubahan', [
+            'karyawan_id' => $driver->id,
+            'tanggal' => '2026-09-22 00:00:00',
+            'status_sebelumnya' => 'libur',
+            'status_baru' => 'kerja',
+            'diubah_oleh' => $admin->id,
+        ]);
+    }
+
     public function test_bentrok_pribadi_driver_pengganti_ditolak_jika_sedang_libur(): void
     {
         $admin = $this->admin();

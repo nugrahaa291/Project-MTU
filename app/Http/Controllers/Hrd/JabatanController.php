@@ -28,7 +28,7 @@ class JabatanController extends Controller
         Jabatan::create($this->validasi($request));
         $rute = $request->routeIs('admin.*') ? 'admin.jabatan.index' : 'hrd.jabatan.index';
 
-        return redirect()->route($rute)->with('success', 'Jabatan ditambahkan.');
+        return redirect()->route($rute)->with('success', 'Unit ditambahkan.');
     }
 
     public function edit(Jabatan $jabatan): View
@@ -41,19 +41,19 @@ class JabatanController extends Controller
         $jabatan->update($this->validasi($request, $jabatan));
         $rute = $request->routeIs('admin.*') ? 'admin.jabatan.index' : 'hrd.jabatan.index';
 
-        return redirect()->route($rute)->with('success', 'Jabatan diperbarui.');
+        return redirect()->route($rute)->with('success', 'Unit diperbarui.');
     }
 
     public function destroy(Jabatan $jabatan): RedirectResponse
     {
         if ($jabatan->lowongan()->exists() || $jabatan->karyawan()->exists()) {
-            return back()->with('error', 'Jabatan masih dipakai lowongan/karyawan. Nonaktifkan saja bila tidak dipakai lagi.');
+            return back()->with('error', 'Unit masih dipakai lowongan/karyawan. Nonaktifkan saja bila tidak dipakai lagi.');
         }
 
         $jabatan->delete();
         $rute = request()->routeIs('admin.*') ? 'admin.jabatan.index' : 'hrd.jabatan.index';
 
-        return redirect()->route($rute)->with('success', 'Jabatan dihapus.');
+        return redirect()->route($rute)->with('success', 'Unit dihapus.');
     }
 
     private function validasi(Request $request, ?Jabatan $jabatan = null): array

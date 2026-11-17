@@ -10,8 +10,8 @@
 
         <x-field name="judul" label="Judul Lowongan" :value="$lowongan->judul" required />
         <div class="grid gap-4 sm:grid-cols-2">
-            <x-field name="jabatan_id" label="Jabatan" as="select" hint="Jabatan otomatis dipakai saat pelamar diterima." required>
-                <option value="">Pilih...</option>
+            <x-field name="jabatan_id" label="Unit / Penugasan" as="select" hint="Unit otomatis dipakai saat pelamar diterima." required>
+                <option value="">Pilih Unit...</option>
                 @foreach ($jabatan as $j)
                     <option value="{{ $j->id }}" @selected(old('jabatan_id', $lowongan->jabatan_id) == $j->id)>{{ $j->nama }}</option>
                 @endforeach

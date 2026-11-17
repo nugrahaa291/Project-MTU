@@ -8,7 +8,7 @@
         <div class="grid gap-4 sm:grid-cols-2">
             <x-field name="nama" label="Nama Lengkap" :value="$karyawan->nama" required />
             <x-field name="no_hp" label="Nomor HP" :value="$karyawan->no_hp" required />
-            <x-field name="jabatan_id" label="Jabatan" as="select" required>
+            <x-field name="jabatan_id" label="Unit / Penugasan Armada" as="select" required>
                 @foreach ($jabatan as $j)
                     <option value="{{ $j->id }}" @selected(old('jabatan_id', $karyawan->jabatan_id) == $j->id)>{{ $j->nama }}</option>
                 @endforeach

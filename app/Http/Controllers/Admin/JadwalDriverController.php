@@ -8,6 +8,7 @@ use App\Models\JadwalDriver;
 use App\Models\JadwalImportBatch;
 use App\Models\JadwalRiwayatPerubahan;
 use App\Models\Karyawan;
+use App\Models\Pengaturan;
 use App\Models\ProyekKebutuhanDriver;
 use App\Services\JadwalDriverService;
 use App\Services\JadwalImportService;
@@ -106,8 +107,27 @@ class JadwalDriverController extends Controller
             $daftarProyek[] = 'Operasional MTU';
         }
 
-        $semuaDriver = Karyawan::aktif()->orderBy('nama')->get(['id', 'nama', 'nip', 'nik', 'proyek']);
+        $semuaDriver = Karyawan::aktif()->with('jabatan')->orderBy('nama')->get(['id', 'nama', 'nip', 'nik', 'proyek', 'jabatan_id']);
         $batchTerbaru = JadwalImportBatch::with('uploader')->latest()->limit(5)->get();
+
+        // Data daftar hari libur per driver untuk bulan aktif (mendukung pertukaran libur tetap)
+        $jadwalLiburPerDriver = JadwalDriver::whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulan)
+            ->where('status_jadwal', 'libur')
+            ->orderBy('tanggal')
+            ->get(['id', 'karyawan_id', 'tanggal'])
+            ->groupBy('karyawan_id')
+            ->map(function ($items) {
+                return $items->map(function ($j) {
+                    return [
+                        'id' => $j->id,
+                        'tanggal' => $j->tanggal->toDateString(),
+                        'tanggal_formatted' => $j->tanggal->translatedFormat('d M Y'),
+                    ];
+                })->values();
+            });
+
+        $defaultJatahLibur = (int) Pengaturan::ambil('jatah_libur_driver_bulanan', '7');
 
         return view('admin.jadwal-driver.index', compact(
             'kalender',
@@ -118,7 +138,9 @@ class JadwalDriverController extends Controller
             'tanggalPilihan',
             'daftarProyek',
             'semuaDriver',
-            'batchTerbaru'
+            'batchTerbaru',
+            'jadwalLiburPerDriver',
+            'defaultJatahLibur'
         ));
     }
 
@@ -365,6 +387,7 @@ class JadwalDriverController extends Controller
             'karyawan_id' => ['required', 'exists:karyawan,id'],
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+            'tanggal_tukar' => ['nullable', 'date'],
             'proyek' => ['nullable', 'string', 'max:50'],
             'driver_pengganti_id' => ['nullable', 'exists:karyawan,id', 'different:karyawan_id'],
             'alasan_pengecualian' => ['nullable', 'string', 'max:500'],
@@ -380,15 +403,18 @@ class JadwalDriverController extends Controller
             ActivityLog::catat(
                 $request->user(),
                 'tambah_libur_manual',
-                "Menambahkan libur driver mendadak (ID Karyawan: {$data['karyawan_id']}, {$hasil['total_hari']} hari)"
+                "Menambahkan libur driver mendadak (ID Karyawan: {$data['karyawan_id']}, {$hasil['total_hari']} hari)" . ($hasil['info_tukar'] ? ", menukar libur tetap tanggal {$hasil['info_tukar']}" : '')
             );
 
-            $pesan = "Jadwal libur driver berhasil ditambahkan ({$hasil['total_hari']} hari).";
+            $pesan = $hasil['info_tukar']
+                ? "Izin dadakan driver berhasil disimpan. Hari libur tetap pada {$hasil['info_tukar']} telah ditukar menjadi hari kerja (Total jatah libur tetap terjaga)."
+                : "Jadwal libur driver berhasil ditambahkan ({$hasil['total_hari']} hari).";
+
             if (! empty($hasil['peringatan'])) {
                 $pesan .= ' Catatan: ' . implode(' ', $hasil['peringatan']);
             }
 
-            return back()->with('success', $pesan);
+            return back()->with('success', $pesan)->with('sukses', $pesan);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }

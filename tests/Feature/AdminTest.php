@@ -318,6 +318,11 @@ class AdminTest extends TestCase
 
         $this->assertDatabaseHas('jabatan', ['nama' => 'Staff Keuangan']);
 
+        $resIndex = $this->actingAs($admin)->get(route('admin.jabatan.index'));
+        $resIndex->assertOk();
+        $resIndex->assertSee('Unit');
+        $resIndex->assertSee('+ Tambah Unit');
+
         // Hari libur
         $this->actingAs($admin)->post(route('admin.kalender.store'), [
             'tanggal' => '2026-12-25',

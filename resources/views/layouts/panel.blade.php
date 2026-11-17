@@ -19,7 +19,7 @@
         ['admin.karyawan.index', 'Karyawan', 'admin.karyawan.*'],
         ['admin.absensi.index', 'Absensi', 'admin.absensi.index'],
         ['admin.absensi.rekap', 'Rekap Absensi', 'admin.absensi.rekap'],
-        ['admin.jabatan.index', 'Jabatan', 'admin.jabatan.*'],
+        ['admin.jabatan.index', 'Unit', 'admin.jabatan.*'],
         ['admin.jadwal-driver.index', 'Jadwal Libur Driver', 'admin.jadwal-driver.*'],
         ['admin.users.index', 'Manajemen Pengguna', 'admin.users.*'],
         ['admin.pengaturan', 'Pengaturan Sistem', 'admin.pengaturan'],

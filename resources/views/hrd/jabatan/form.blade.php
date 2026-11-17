@@ -1,5 +1,5 @@
 @extends('layouts.panel')
-@section('judul', $jabatan->exists ? 'Edit Jabatan' : 'Tambah Jabatan')
+@section('judul', $jabatan->exists ? 'Edit Unit' : 'Tambah Unit')
 
 @section('content')
     @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
@@ -8,11 +8,11 @@
         @csrf
         @if ($jabatan->exists) @method('PUT') @endif
 
-        <x-field name="nama" label="Nama Jabatan" :value="$jabatan->nama" required />
-        <x-field name="deskripsi" label="Deskripsi" as="textarea" rows="3" :value="$jabatan->deskripsi" />
+        <x-field name="nama" label="Nama Unit" :value="$jabatan->nama" placeholder="Contoh: Wingbox, Trailer, CDD, Logistik" required />
+        <x-field name="deskripsi" label="Deskripsi" as="textarea" rows="3" :value="$jabatan->deskripsi" placeholder="Deskripsi peruntukan atau jenis armada unit..." />
         <label class="flex items-center gap-2 text-sm">
             <input type="checkbox" name="aktif" value="1" @checked(old('aktif', $jabatan->aktif)) class="rounded border-gray-300 text-brand focus:ring-brand">
-            Aktif (bisa dipilih untuk lowongan baru)
+            Aktif (bisa dipilih untuk penugasan karyawan)
         </label>
 
         <div class="flex gap-2">

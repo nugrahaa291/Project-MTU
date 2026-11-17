@@ -20,7 +20,7 @@
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-xl font-bold">{{ $karyawan->nama }}</h2>
-                    <p class="text-sm text-gray-500">{{ $karyawan->jabatan->nama }} &middot; NIP {{ $karyawan->nip }}</p>
+                    <p class="text-sm text-gray-500">Unit: {{ $karyawan->jabatan->nama }} &middot; NIP {{ $karyawan->nip }}</p>
                 </div>
                 <x-badge :warna="$karyawan->aktif ? 'green' : 'slate'">{{ $karyawan->aktif ? 'Aktif' : 'Nonaktif' }}</x-badge>
             </div>
