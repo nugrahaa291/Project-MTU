@@ -17,13 +17,16 @@
         ['hrd.lowongan.index', 'Lowongan', 'hrd.lowongan.*'],
         ['hrd.lamaran.index', 'Lamaran Masuk', 'hrd.lamaran.*'],
         ['hrd.karyawan.index', 'Karyawan', 'hrd.karyawan.*'],
-        ['hrd.absensi.index', 'Absensi', 'hrd.absensi.index'],
-        ['hrd.absensi.rekap', 'Rekap Absensi', 'hrd.absensi.rekap'],
+        ['hrd.kegiatan.index', 'Aktivitas Absensi', 'hrd.kegiatan.*'],
+        ['hrd.izin.index', 'Pengajuan Izin', 'hrd.izin.*'],
+        ['hrd.absensi.index', 'Absensi Lama', 'hrd.absensi.index'],
+        ['hrd.absensi.rekap', 'Rekap Absensi Lama', 'hrd.absensi.rekap'],
         ['hrd.kalender.index', 'Hari Libur', 'hrd.kalender.*'],
         ['hrd.jabatan.index', 'Jabatan', 'hrd.jabatan.*'],
     ];
     $menuKaryawan = [['karyawan.beranda', 'Absensi Saya', 'karyawan.*']];
     $menu = $user->isHrd() ? $menuHrd : $menuKaryawan;
+    $izinMenunggu = $user->isHrd() ? \App\Models\KegiatanAbsensi::izinMenunggu()->count() : 0;
 @endphp
 
 <div class="min-h-screen lg:flex">
@@ -36,6 +39,9 @@
                 <a href="{{ route($rute) }}"
                    class="block rounded-md px-3 py-2 text-sm font-medium {{ request()->routeIs($pola) ? 'bg-brand text-white' : 'hover:bg-ink-soft hover:text-white' }}">
                     {{ $label }}
+                    @if ($rute === 'hrd.izin.index' && $izinMenunggu > 0)
+                        <span class="ml-1 rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-ink">{{ $izinMenunggu }}</span>
+                    @endif
                 </a>
             @endforeach
             <a href="{{ route('lowongan.index') }}" target="_blank"

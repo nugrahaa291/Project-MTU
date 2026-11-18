@@ -10,6 +10,7 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): RedirectResponse
     {
-        return redirect()->route($request->user()->isHrd() ? 'hrd.dashboard' : 'karyawan.beranda');
+        // HRD ke dashboard; karyawan langsung ke halaman Absen
+        return redirect()->route($request->user()->isHrd() ? 'hrd.dashboard' : 'pwa');
     }
 }

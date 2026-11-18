@@ -24,7 +24,7 @@ class AbsensiController extends Controller
         $sampai = $request->input('sampai', $hariIni);
 
         $absensi = Absensi::with('karyawan.jabatan')
-            ->whereBetween('tanggal', [$dari, $sampai])
+            ->whereDate('tanggal', '>=', $dari)->whereDate('tanggal', '<=', $sampai)
             ->when($request->filled('karyawan_id'), fn ($q) => $q->where('karyawan_id', $request->karyawan_id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->orderByDesc('tanggal')
@@ -51,7 +51,7 @@ class AbsensiController extends Controller
         $akhir = $awal->endOfMonth();
 
         $hitung = Absensi::selectRaw('karyawan_id, status, count(*) as jumlah, sum(menit_terlambat) as menit')
-            ->whereBetween('tanggal', [$awal->toDateString(), $akhir->toDateString()])
+            ->whereDate('tanggal', '>=', $awal->toDateString())->whereDate('tanggal', '<=', $akhir->toDateString())
             ->groupBy('karyawan_id', 'status')
             ->get()
             ->groupBy('karyawan_id');

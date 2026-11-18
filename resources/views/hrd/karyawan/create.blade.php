@@ -11,6 +11,7 @@
             <x-field name="nama" label="Nama Lengkap" required />
             <x-field name="email" label="Email (untuk login)" type="email" required />
             <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
+            <x-field name="nip" label="NIP (opsional)" hint="Dipakai untuk login karyawan. Kosongkan agar dibuat otomatis." />
             <x-field name="no_hp" label="Nomor HP" required />
             <x-field name="jabatan_id" label="Jabatan" as="select" required>
                 <option value="">Pilih...</option>

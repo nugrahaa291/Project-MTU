@@ -56,6 +56,6 @@ class PwaTest extends TestCase
         app()->setLocale('id');
 
         $this->postJson('/api/login', [])->assertStatus(422)
-            ->assertJsonPath('errors.email.0', 'Email wajib diisi.');
+            ->assertJsonPath('errors.nip.0', 'NIP wajib diisi.');
     }
 }

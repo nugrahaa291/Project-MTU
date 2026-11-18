@@ -135,3 +135,97 @@ export function ukuranTerskala(lebar, tinggi, maks = 1024) {
     const rasio = Math.min(1, maks / Math.max(lebar, tinggi));
     return { lebar: Math.round(lebar * rasio), tinggi: Math.round(tinggi * rasio) };
 }
+
+/* ===================================================================================
+ * Alur absensi baru: Standby / Order / Izin
+ * =================================================================================== */
+
+/** Kunci unik untuk SATU kali pengiriman. Server memakainya agar kirim ulang tidak membuat catatan ganda. */
+export function buatKunci() {
+    const c = globalThis.crypto;
+    if (c?.randomUUID) return c.randomUUID();
+    const bait = new Uint8Array(16);
+    if (c?.getRandomValues) c.getRandomValues(bait);
+    else for (let i = 0; i < 16; i++) bait[i] = Math.floor(Math.random() * 256);
+    return [...bait].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Aturan PIN yang sama dengan server (App\Support\Pin): 6 digit, bukan pola yang mudah ditebak. */
+export function pinValid(pin) {
+    if (!/^\d{6}$/.test(pin)) return false;
+    if (/^(\d{1,3})\1+$/.test(pin)) return false; // 111111, 121212, 123123
+    let naik = true;
+    let turun = true;
+    for (let i = 1; i < 6; i++) {
+        const selisih = (Number(pin[i]) - Number(pin[i - 1]) + 10) % 10;
+        naik = naik && selisih === 1;
+        turun = turun && selisih === 9;
+    }
+    return !(naik || turun);
+}
+
+export function pesanPin(pin) {
+    if (!/^\d{6}$/.test(pin)) return 'PIN harus 6 digit angka.';
+    if (!pinValid(pin)) return 'PIN terlalu mudah ditebak (angka berulang atau berurutan). Pilih kombinasi lain.';
+    return null;
+}
+
+export function formatKoordinat(lat, lng) {
+    return `${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}`;
+}
+
+/** Memeriksa berkas SKD sebelum dikirim (server tetap memeriksa ulang). Mengembalikan pesan salah atau null. */
+export function validasiLampiran(berkas, maksMb = 5) {
+    if (!berkas) return 'Pilih berkas SKD terlebih dahulu.';
+    const jenisOk = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!jenisOk.includes(berkas.type)) return 'SKD harus berupa foto (JPG/PNG) atau PDF.';
+    if (berkas.size > maksMb * 1024 * 1024) return `Ukuran SKD maksimal ${maksMb} MB.`;
+    if (berkas.size < 1) return 'Berkas SKD kosong atau rusak.';
+    return null;
+}
+
+export function bangunFormStandby() {
+    return null; // Standby hanya butuh kunci (JSON); tidak ada lokasi, selfie, atau keterangan
+}
+
+export function bangunFormOrder({ kunci, tujuan, foto, latitude, longitude, akurasi }) {
+    const form = new FormData();
+    form.append('kunci', kunci);
+    form.append('tujuan', tujuan);
+    form.append('foto', foto, 'selfie.jpg');
+    form.append('latitude', String(latitude));
+    form.append('longitude', String(longitude));
+    if (akurasi != null) form.append('akurasi', String(Math.round(akurasi)));
+    return form;
+}
+
+export function bangunFormIzin({ kunci, kategori, alasan, lampiran }) {
+    const form = new FormData();
+    form.append('kunci', kunci);
+    form.append('kategori', kategori);
+    if (alasan) form.append('alasan', alasan);
+    if (lampiran) form.append('lampiran', lampiran, lampiran.name || 'skd');
+    return form;
+}
+
+/** Ringkasan satu catatan untuk daftar: {judul, rinci, warna}. */
+export function ringkasKegiatan(k) {
+    const warna = { tercatat: 'green', menunggu: 'amber', disetujui: 'blue', ditolak: 'red' }[k.status] ?? 'slate';
+
+    if (k.jenis === 'standby') return { judul: 'Standby', rinci: 'Status standby tercatat', warna };
+    if (k.jenis === 'order') {
+        const lokasi = k.nama_lokasi
+            || (k.lokasi_aktual ? formatKoordinat(k.lokasi_aktual.latitude, k.lokasi_aktual.longitude) : '');
+        return { judul: `Order ke ${k.tujuan}`, rinci: lokasi ? `Lokasi HP: ${lokasi}` : '', warna };
+    }
+
+    const kategori = k.kategori_label || 'Izin';
+    let rinci = '';
+    if (k.status === 'menunggu') rinci = 'Menunggu keputusan admin';
+    else if (k.status === 'disetujui') rinci = k.pengganti ? `Disetujui. Pengganti: ${k.pengganti}` : 'Disetujui';
+    else if (k.status === 'ditolak') rinci = k.alasan_penolakan ? `Ditolak: ${k.alasan_penolakan}` : 'Ditolak';
+    else if (k.kategori_izin === 'sakit') rinci = 'SKD terlampir';
+    else rinci = 'Tercatat';
+
+    return { judul: `Izin ${kategori}`, rinci, warna };
+}

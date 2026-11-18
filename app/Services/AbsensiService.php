@@ -19,12 +19,12 @@ class AbsensiService
     /** Waktu "sekarang" menurut zona waktu absensi (WIB), bukan zona waktu server. */
     public function sekarang(): CarbonImmutable
     {
-        return CarbonImmutable::now(config('absensi.timezone'));
+        return CarbonImmutable::now(config('absensi.timezone', 'Asia/Jakarta'));
     }
 
     public function hariKerja(CarbonInterface $tanggal): bool
     {
-        if (! in_array($tanggal->dayOfWeekIso, config('absensi.hari_kerja'), true)) {
+        if (! in_array($tanggal->dayOfWeekIso, config('absensi.hari_kerja', [1, 2, 3, 4, 5]), true)) {
             return false;
         }
 
@@ -139,6 +139,8 @@ class AbsensiService
         Karyawan::aktif()
             ->whereDate('tanggal_masuk', '<=', $tanggal->toDateString())
             ->whereDoesntHave('absensi', fn ($q) => $q->whereDate('tanggal', $tanggal->toDateString()))
+            // Karyawan yang memakai alur baru (Standby/Order/Izin) hari itu tidak dianggap alpa
+            ->whereDoesntHave('kegiatan', fn ($q) => $q->whereDate('tanggal', $tanggal->toDateString()))
             ->each(function (Karyawan $k) use ($tanggal, &$jumlah) {
                 try {
                     Absensi::create([

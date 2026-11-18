@@ -34,6 +34,17 @@ class LoginController extends Controller
                 ->onlyInput('email');
         }
 
+        // Panel web ini khusus HRD. Karyawan masuk lewat halaman Absen dengan NIP + PIN.
+        if (! Auth::user()->isHrd()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['email' => 'Akun karyawan masuk lewat halaman Absen (/absen) menggunakan NIP dan PIN.'])
+                ->onlyInput('email');
+        }
+
         // Ganti ID sesi setelah login untuk mencegah session fixation
         $request->session()->regenerate();
 

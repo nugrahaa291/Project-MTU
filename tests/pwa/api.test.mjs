@@ -7,39 +7,59 @@ const balas = (status, data) => async () => ({ ok: status >= 200 && status < 300
 test('mengirim token Bearer dan header Accept JSON', async () => {
     let diterima;
     const api = buatApi({ ambilToken: () => 'T0K3N', fetchFn: async (url, opsi) => { diterima = { url, opsi }; return balas(200, { ok: 1 })(); } });
-    await api.hariIni();
-    assert.equal(diterima.url, '/api/absensi/hari-ini');
+    await api.ringkasan();
+    assert.equal(diterima.url, '/api/aktivitas/ringkasan');
     assert.equal(diterima.opsi.headers.Authorization, 'Bearer T0K3N');
     assert.equal(diterima.opsi.headers.Accept, 'application/json');
 });
 
-test('multipart: tidak menyetel Content-Type sendiri (boundary diatur browser)', async () => {
-    let opsi;
-    const api = buatApi({ ambilToken: () => 't', fetchFn: async (_u, o) => { opsi = o; return balas(201, {})(); } });
-    const form = new FormData();
-    form.append('a', '1');
-    await api.masuk(form);
-    assert.equal(opsi.method, 'POST');
-    assert.equal(opsi.body, form);
-    assert.equal(opsi.headers['Content-Type'], undefined);
-});
-
-test('login memakai JSON dan tanpa token', async () => {
+test('login memakai NIP + PIN (JSON) dan tanpa token', async () => {
     let opsi;
     const api = buatApi({ ambilToken: () => null, fetchFn: async (_u, o) => { opsi = o; return balas(200, { token: 'x' })(); } });
-    await api.login('a@b.c', 'pw', 'PWA Android x');
+    await api.login('MTU-0123', '482913', 'PWA Android x');
     assert.equal(opsi.headers.Authorization, undefined);
-    assert.deepEqual(JSON.parse(opsi.body), { email: 'a@b.c', password: 'pw', device_name: 'PWA Android x' });
+    assert.deepEqual(JSON.parse(opsi.body), { nip: 'MTU-0123', pin: '482913', device_name: 'PWA Android x' });
 });
 
-test('401 dengan token memicu saatTidakSah; tanpa token (salah password) tidak', async () => {
+test('standby hanya mengirim kunci; order dan izin mengirim multipart tanpa Content-Type manual', async () => {
+    const dipanggil = [];
+    const api = buatApi({ ambilToken: () => 't', fetchFn: async (u, o) => { dipanggil.push({ u, o }); return balas(201, {})(); } });
+
+    await api.standby('kunci-standby-0123456789');
+    assert.equal(dipanggil[0].u, '/api/aktivitas/standby');
+    assert.deepEqual(JSON.parse(dipanggil[0].o.body), { kunci: 'kunci-standby-0123456789' });
+
+    const form = new FormData();
+    form.append('a', '1');
+    await api.order(form);
+    await api.izin(form);
+    assert.equal(dipanggil[1].u, '/api/aktivitas/order');
+    assert.equal(dipanggil[2].u, '/api/aktivitas/izin');
+    for (const i of [1, 2]) {
+        assert.equal(dipanggil[i].o.method, 'POST');
+        assert.equal(dipanggil[i].o.body, form);
+        assert.equal(dipanggil[i].o.headers['Content-Type'], undefined);
+    }
+});
+
+test('daftarkan PIN dan riwayat bulanan', async () => {
+    const dipanggil = [];
+    const api = buatApi({ ambilToken: () => 't', fetchFn: async (u, o) => { dipanggil.push({ u, o }); return balas(200, {})(); } });
+    await api.gantiPin({ pin_lama: '482913', pin: '739418', pin_confirmation: '739418' });
+    await api.riwayat('2026-11');
+    assert.equal(dipanggil[0].u, '/api/pin');
+    assert.equal(dipanggil[0].o.method, 'PUT');
+    assert.equal(dipanggil[1].u, '/api/aktivitas?bulan=2026-11');
+});
+
+test('401 dengan token memicu saatTidakSah; tanpa token (login salah) tidak', async () => {
     let dipicu = 0;
     const denganToken = buatApi({ ambilToken: () => 't', saatTidakSah: () => dipicu++, fetchFn: balas(401, { message: 'Unauthenticated.' }) });
     await assert.rejects(denganToken.me(), (e) => e instanceof ApiError && e.status === 401);
     assert.equal(dipicu, 1);
 
-    const tanpaToken = buatApi({ ambilToken: () => null, saatTidakSah: () => dipicu++, fetchFn: balas(401, { message: 'Email atau password salah.' }) });
-    await assert.rejects(tanpaToken.login('a', 'b', 'c'), /Email atau password salah/);
+    const tanpaToken = buatApi({ ambilToken: () => null, saatTidakSah: () => dipicu++, fetchFn: balas(401, { message: 'NIP atau PIN salah.' }) });
+    await assert.rejects(tanpaToken.login('a', 'b', 'c'), /NIP atau PIN salah/);
     assert.equal(dipicu, 1);
 });
 
@@ -48,12 +68,15 @@ test('kesalahan jaringan menjadi ApiError status 0', async () => {
     await assert.rejects(api.me(), (e) => e.status === 0 && e.kode === 'jaringan' && /koneksi/.test(e.message));
 });
 
-test('kesalahan validasi 422 menampilkan pesan field pertama; kode mesin dibawa', async () => {
-    const v = buatApi({ ambilToken: () => 't', fetchFn: balas(422, { message: 'x', errors: { foto: ['Foto wajib diisi.'] } }) });
-    await assert.rejects(v.masuk(new FormData()), (e) => e.message === 'Foto wajib diisi.');
+test('422 menampilkan pesan field pertama; kode mesin dan 429 dibawa', async () => {
+    const v = buatApi({ ambilToken: () => 't', fetchFn: balas(422, { message: 'x', errors: { foto: ['Foto selfie wajib diambil.'] } }) });
+    await assert.rejects(v.order(new FormData()), (e) => e.message === 'Foto selfie wajib diambil.');
 
-    const k = buatApi({ ambilToken: () => 't', fetchFn: balas(422, { message: 'Anda berada 1112 m dari Kantor Pusat.', kode: 'di_luar_radius' }) });
-    await assert.rejects(k.masuk(new FormData()), (e) => e.kode === 'di_luar_radius' && e.status === 422);
+    const k = buatApi({ ambilToken: () => 't', fetchFn: balas(422, { message: 'Alasan izin wajib diisi (minimal 5 karakter).', kode: 'alasan_wajib' }) });
+    await assert.rejects(k.izin(new FormData()), (e) => e.kode === 'alasan_wajib' && e.status === 422);
+
+    const t = buatApi({ ambilToken: () => null, fetchFn: balas(429, { message: 'Terlalu banyak percobaan login.', kode: 'terlalu_banyak_percobaan' }) });
+    await assert.rejects(t.login('a', 'b', 'c'), (e) => e.status === 429 && e.kode === 'terlalu_banyak_percobaan');
 });
 
 test('balasan non-JSON tidak membuat crash', async () => {

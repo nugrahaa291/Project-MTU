@@ -37,7 +37,7 @@
                     <x-field name="tempat_lahir" label="Tempat Lahir" required />
                     <x-field name="tanggal_lahir" label="Tanggal Lahir" type="date" required />
                 </div>
-                <x-field name="alamat" label="Alamat Lengkap" as="textarea" rows="3" required resize/>
+                <x-field name="alamat" label="Alamat Lengkap" as="textarea" rows="3" required />
             </fieldset>
 
             <fieldset class="card space-y-4 p-6">

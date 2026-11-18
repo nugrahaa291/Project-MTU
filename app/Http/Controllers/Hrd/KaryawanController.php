@@ -47,11 +47,16 @@ class KaryawanController extends Controller
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')],
             'nik' => ['required', 'digits:16', Rule::unique('karyawan', 'nik')],
+            'nip' => ['nullable', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9.\-\/]+$/', Rule::unique('karyawan', 'nip')],
             'no_hp' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'alamat' => ['nullable', 'string', 'max:500'],
             'jabatan_id' => ['required', Rule::exists('jabatan', 'id')->where('aktif', true)],
             'tanggal_masuk' => ['required', 'date'],
-        ], ['nik.digits' => 'NIK harus 16 digit angka.']);
+        ], [
+            'nik.digits' => 'NIK harus 16 digit angka.',
+            'nip.regex' => 'NIP hanya boleh berisi huruf, angka, titik, strip, atau garis miring.',
+            'nip.unique' => 'NIP ini sudah dipakai karyawan lain.',
+        ]);
 
         $data['no_hp'] = \App\Models\Lamaran::normalisasiHp($data['no_hp']);
 
@@ -63,7 +68,7 @@ class KaryawanController extends Controller
 
         return redirect()->route('hrd.karyawan.show', $karyawan)
             ->with('success', 'Karyawan ditambahkan.')
-            ->with('password_sementara', $password);
+            ->with('pin_sementara', $password);
     }
 
     public function show(Karyawan $karyawan): View
@@ -89,6 +94,10 @@ class KaryawanController extends Controller
             'no_hp' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'alamat' => ['nullable', 'string', 'max:500'],
             'jabatan_id' => ['required', 'exists:jabatan,id'],
+            'nip' => ['required', 'string', 'min:3', 'max:20', 'regex:/^[A-Za-z0-9.\-\/]+$/', Rule::unique('karyawan', 'nip')->ignore($karyawan->id)],
+        ], [
+            'nip.regex' => 'NIP hanya boleh berisi huruf, angka, titik, strip, atau garis miring.',
+            'nip.unique' => 'NIP ini sudah dipakai karyawan lain.',
         ]);
         $data['no_hp'] = \App\Models\Lamaran::normalisasiHp($data['no_hp']);
 
@@ -109,7 +118,7 @@ class KaryawanController extends Controller
         $password = $this->service->resetPassword($karyawan);
 
         return redirect()->route('hrd.karyawan.show', $karyawan)
-            ->with('success', 'Password direset. Karyawan wajib menggantinya saat login berikutnya.')
-            ->with('password_sementara', $password);
+            ->with('success', 'PIN direset. Karyawan wajib mendaftarkan PIN barunya saat login berikutnya.')
+            ->with('pin_sementara', $password);
     }
 }

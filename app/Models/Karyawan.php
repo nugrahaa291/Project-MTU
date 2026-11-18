@@ -45,6 +45,11 @@ class Karyawan extends Model
         return $this->hasMany(Absensi::class);
     }
 
+    public function kegiatan(): HasMany
+    {
+        return $this->hasMany(KegiatanAbsensi::class);
+    }
+
     public function scopeAktif(Builder $query): Builder
     {
         return $query->where('aktif', true);

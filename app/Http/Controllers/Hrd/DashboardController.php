@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Hrd;
 
-use App\Enums\StatusAbsensi;
 use App\Enums\StatusLamaran;
 use App\Http\Controllers\Controller;
-use App\Models\Absensi;
 use App\Models\Karyawan;
+use App\Models\KegiatanAbsensi;
 use App\Models\Lamaran;
 use App\Models\Lowongan;
 use App\Services\AbsensiService;
@@ -24,10 +23,8 @@ class DashboardController extends Controller
             'lamaran_baru' => Lamaran::where('status', StatusLamaran::Diajukan->value)->count(),
             'lamaran_seleksi' => Lamaran::where('status', StatusLamaran::Seleksi->value)->count(),
             'karyawan_aktif' => $karyawanAktif,
-            'sudah_absen' => Absensi::whereDate('tanggal', $hariIni)
-                ->whereIn('status', [StatusAbsensi::Hadir->value, StatusAbsensi::Terlambat->value])->count(),
-            'terlambat' => Absensi::whereDate('tanggal', $hariIni)
-                ->where('status', StatusAbsensi::Terlambat->value)->count(),
+            'absen_hari_ini' => KegiatanAbsensi::whereDate('tanggal', $hariIni)->distinct('karyawan_id')->count('karyawan_id'),
+            'izin_menunggu' => KegiatanAbsensi::izinMenunggu()->count(),
         ];
 
         $lamaranTerbaru = Lamaran::with('lowongan')->latest()->limit(6)->get();

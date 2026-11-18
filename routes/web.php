@@ -83,6 +83,19 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
             | Absensi (pemantauan oleh HRD)
             |------------------------------------------------------------------
             */
+            /*
+            |------------------------------------------------------------------
+            | Absensi alur BARU: Standby / Order / Izin
+            |------------------------------------------------------------------
+            */
+            Route::get('kegiatan', [Hrd\KegiatanController::class, 'index'])->name('kegiatan.index');
+            Route::get('kegiatan/{kegiatan}/foto', [Hrd\KegiatanController::class, 'foto'])->name('kegiatan.foto');
+            Route::get('kegiatan/{kegiatan}/lampiran', [Hrd\KegiatanController::class, 'lampiran'])->name('kegiatan.lampiran');
+            Route::get('izin', [Hrd\IzinController::class, 'index'])->name('izin.index');
+            Route::post('izin/{kegiatan}/setujui', [Hrd\IzinController::class, 'setujui'])->name('izin.setujui');
+            Route::post('izin/{kegiatan}/tolak', [Hrd\IzinController::class, 'tolak'])->name('izin.tolak');
+
+            /* Absensi alur LAMA (masuk/pulang): riwayat dipertahankan */
             Route::get('absensi', [Hrd\AbsensiController::class, 'index'])->name('absensi.index');
             Route::get('absensi/rekap', [Hrd\AbsensiController::class, 'rekap'])->name('absensi.rekap');
             Route::post('absensi', [Hrd\AbsensiController::class, 'store'])->name('absensi.store');

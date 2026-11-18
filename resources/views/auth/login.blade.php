@@ -17,7 +17,7 @@
 
         <div class="card p-6">
             <h1 class="mb-1 text-lg font-bold">Masuk</h1>
-            <p class="mb-5 text-sm text-gray-500">Khusus HRD dan karyawan.</p>
+            <p class="mb-5 text-sm text-gray-500">Khusus HRD / admin.</p>
 
             <form method="POST" action="{{ route('login') }}" class="space-y-4">
                 @csrf
@@ -26,11 +26,12 @@
                 <label class="flex items-center gap-2 text-sm">
                     <input type="checkbox" name="ingat" value="1" class="rounded border-gray-300 text-brand focus:ring-brand"> Ingat saya
                 </label>
-                <button class="btn btn-primary w-full">Masuk Donk</button>
+                <button class="btn btn-primary w-full">Masuk</button>
             </form>
         </div>
 
         <p class="mt-4 text-center text-sm text-gray-400">
+            Karyawan? <a href="{{ route('pwa') }}" class="font-semibold text-brand">Masuk ke halaman Absen</a> dengan NIP dan PIN.<br>
             Mencari lowongan? <a href="{{ route('lowongan.index') }}" class="font-semibold text-brand">Lihat di sini</a>
         </p>
     </div>

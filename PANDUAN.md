@@ -45,24 +45,31 @@ Cek semuanya: `php artisan test` (50 pengujian PHP) dan `node --test tests/pwa/*
 
 Status lamaran: `diajukan -> seleksi -> diterima | ditolak` (diterima/ditolak bersifat final).
 
-## 3. Kontrak API mobile
+## 3. Kontrak API mobile (alur absensi baru)
 
 Semua balasan JSON. Kirim header `Accept: application/json`. Setelah login: `Authorization: Bearer <token>`.
+Identitas karyawan SELALU dari token, dan waktu resmi SELALU dari jam server (WIB).
 
 | Method & URL | Keterangan |
 |---|---|
-| `POST /api/login` | body: `email`, `password`, `device_name` -> `token`, `must_change_password`, data karyawan. Token berlaku 30 hari; satu token per nama perangkat |
-| `PUT /api/password` | `password_lama`, `password`, `password_confirmation`. Wajib dipanggil bila `must_change_password = true` |
+| `POST /api/login` | body: `nip`, `pin`, `device_name` -> `token`, `must_change_pin`, data karyawan. Dibatasi 5 salah-PIN per NIP+IP per 5 menit dan 20 per NIP per jam |
+| `PUT /api/pin` | `pin_lama`, `pin`, `pin_confirmation`. PIN = 6 digit angka, bukan angka berulang/berurutan. Wajib dipanggil bila `must_change_pin = true` |
 | `GET /api/me` / `POST /api/logout` | profil / keluar |
-| `GET /api/absensi/hari-ini` | koordinat & radius kantor, jam masuk, `bisa_masuk`, `bisa_pulang`, catatan hari ini |
-| `POST /api/absensi/masuk` | multipart: `foto` (jpg/png, maks 5 MB), `latitude`, `longitude`, opsional `akurasi` (meter), `lokasi_palsu` (isMock Android) |
-| `POST /api/absensi/pulang` | sama dengan masuk |
-| `GET /api/absensi?bulan=2026-10` | riwayat bulanan + ringkasan |
+| `GET /api/aktivitas/ringkasan` | catatan hari ini + 5 pengajuan izin Lain-lain terakhir (status, pengganti, alasan penolakan) |
+| `POST /api/aktivitas/standby` | JSON: `kunci`. Tanpa lokasi/selfie/keterangan |
+| `POST /api/aktivitas/order` | multipart: `kunci`, `tujuan`, `latitude`, `longitude`, `akurasi`, `foto` (JPG/PNG maks 5 MB). Semua wajib; di luar radius kantor tetap diterima |
+| `POST /api/aktivitas/izin` | multipart: `kunci`, `kategori` (`libur` / `sakit` / `lainnya`), `alasan` (wajib untuk `lainnya`), `lampiran` (SKD, wajib untuk `sakit`; JPG/PNG/PDF maks 5 MB) |
+| `GET /api/aktivitas?bulan=2026-11` | riwayat bulanan (alur baru) + `absensi_lama` (masuk/pulang lama) |
 
-Penolakan memakai kode HTTP + `kode` mesin: `di_luar_radius` (422), `akurasi_rendah` (422), `lokasi_palsu` (422),
-`bukan_hari_kerja` (422), `sudah_absen` (409), `belum_masuk` (409), `sudah_pulang` (409),
-`wajib_ganti_password` (403), `akun_nonaktif` (403).
+`kunci` = kode unik dari aplikasi untuk SATU kali penekanan Kirim (UUID). Kirim ulang dengan kunci yang sama
+(klik ganda, sinyal putus) tidak membuat catatan baru: server membalas 200 dengan `duplikat: true`.
 
+Kode `kode` penolakan: `login_gagal` (401), `terlalu_banyak_percobaan` (429), `wajib_ganti_pin` (403),
+`akun_nonaktif` (403), `karyawan_tidak_aktif` (403), `tujuan_kosong`, `akurasi_rendah`, `foto_tidak_valid`,
+`skd_wajib`, `alasan_wajib`, `lampiran_tidak_valid` (422), `kunci_bentrok` (409), `server_tanpa_gd` (500).
+
+Endpoint LAMA (`/api/absensi/masuk|pulang|hari-ini|`) masih ada agar data lama tetap bisa dibaca dan diuji,
+tetapi aplikasi `/absen` tidak lagi memakainya.
 
 ## 3b. Aplikasi absensi karyawan (PWA) - buka `/absen`
 
@@ -95,7 +102,7 @@ Batasan jujur versi web:
 - Izin lokasi/kamera harus diberikan karyawan; bila ditolak, aplikasi menampilkan cara memperbaikinya.
 - Belum diuji di perangkat dan browser sungguhan (Chrome Android, Safari iOS): lihat catatan pengujian di bawah.
 
-## 4. Aturan absensi (config/absensi.php)
+## 4. Aturan absensi LAMA (masuk/pulang, config/absensi.php)
 
 - Absen hanya di radius kantor (default 100 m, Haversine), akurasi GPS maks 100 m.
 - Terlambat bila lewat jam masuk + toleransi (default 08:00 + 15 menit); menit telat dihitung dari 08:00.
@@ -124,3 +131,47 @@ Diperbaiki:
 Dibuang (spesifik bisnis lain / belum bermakna): toko online (produk, order, Midtrans, RajaOngkir, login Google),
 jenis armada / no. lambung / status order-pool, 8 berkas wajib (SIM, SKCK, paklaring, ...), rekap HK berbasis order,
 tabel gaji (tanpa kode di MTU), role enum '0'-'3' (tak jelas artinya).
+
+## 6. Alur absensi baru: Standby / Order / Izin
+
+**Login karyawan:** NIP + PIN di `/absen` (bukan email/password). Panel web `/login` kini khusus HRD.
+HRD membuat akun (otomatis saat pelamar diterima, atau lewat Tambah Karyawan; NIP boleh diisi sendiri) dan
+mendapat **PIN sementara 6 digit** (tampil sekali). Saat login pertama karyawan wajib mendaftarkan PIN sendiri.
+Karyawan lama yang password-nya bukan 6 digit: klik **Reset PIN** di halaman detail karyawan.
+
+| Pilihan | Aturan yang dijaga server |
+|---|---|
+| **Standby** | Langsung Kirim. Dicatat atas akun yang login + jam server. Tanpa lokasi, selfie, keterangan |
+| **Order** | Wajib tujuan + lokasi terkini HP + selfie. Kamera terkunci sampai lokasi terbaca (izin ditolak/gagal: pesan + tombol Coba Lagi). Selfie diberi watermark di SERVER: lokasi aktual (nama bila ada, koordinat bila tidak), tanggal & jam WIB, logo MTU. Tujuan dan lokasi aktual disimpan terpisah. Di luar radius kantor tetap sah |
+| **Izin > Libur** | Langsung Kirim |
+| **Izin > Sakit** | SKD (JPG/PNG/PDF) wajib; isinya diperiksa di server dan disimpan privat |
+| **Izin > Lain-lain** | Alasan wajib; status Menunggu Keputusan. Admin hanya bisa **Setujui setelah memilih karyawan pengganti**; bila tidak ada pengganti, admin **Tolak** dengan alasan. Hasilnya tampil di halaman karyawan |
+
+Panel admin: menu **Aktivitas Absensi** (semua catatan, selfie, SKD, peta) dan **Pengajuan Izin**
+(keputusan; lencana jumlah yang menunggu). Semuanya khusus HRD. Menu absensi lama diberi nama "Absensi Lama".
+
+**Database:** tabel baru `kegiatan_absensi`. Tabel `absensi` lama TIDAK diubah, jadi riwayat lama tetap utuh.
+Perintah: `php artisan migrate`.
+
+**Wajib untuk watermark:** ekstensi PHP **GD** dengan FreeType. Cek: `php -m | findstr gd`. Bila belum aktif, buka `php.ini`
+(Laragon: menu Menu > PHP > php.ini), hapus tanda `;` pada `extension=gd`, lalu restart Laragon. Tanpa GD, Order ditolak dengan
+pesan jelas (kode `server_tanpa_gd`), tidak ada catatan setengah jadi.
+
+**Nama lokasi pada watermark** diambil dari OpenStreetMap Nominatim (koordinat dikirim ke layanan itu). Isi `ABSENSI_GEOCODER_UA`
+dengan kontak yang benar. Bila layanan mati/lambat atau `ABSENSI_GEOCODER=false`, watermark otomatis memakai koordinat.
+
+**Alpa otomatis dimatikan** (jadwal `absensi:tandai-alpa` dikomentari di `routes/console.php`): alur baru tidak punya jam masuk, jadi
+alpa otomatis akan salah menandai semua karyawan. Aturan alpa untuk alur baru belum ditetapkan.
+
+Asumsi yang saya ambil (ubah bila tidak sesuai): izin berlaku untuk **hari pengajuan**; satu karyawan boleh mengirim beberapa Order/Standby
+dalam sehari; posisi Order dengan akurasi lebih buruk dari 1000 m ditolak (`ABSENSI_ORDER_MAKS_AKURASI`).
+
+### Menguji kamera dan lokasi di HP (wajib HTTPS)
+1. Jalankan server Laravel (`php artisan serve`), lalu terowongan HTTPS: `cloudflared tunnel --url http://127.0.0.1:8000`.
+2. Di HP buka `https://....trycloudflare.com/absen`, login NIP + PIN, izinkan **Lokasi** dan **Kamera**.
+3. Uji berurutan: Standby; Order (tolak izin lokasi dulu: kamera harus tetap terkunci, lalu Coba Lagi); Izin Libur/Sakit/Lain-lain.
+4. Di komputer, login HRD: cek **Aktivitas Absensi** (selfie ber-watermark), lalu **Pengajuan Izin** (pilih pengganti, Setujui).
+
+### Pengujian
+`php artisan test` (PHP), `node --test --test-force-exit tests/pwa/*.test.mjs` (aplikasi absensi; butuh `npm i -D jsdom` untuk uji layar).
+Uji watermark nyata (`tests/Unit/WatermarkFotoTest`) otomatis berjalan bila GD aktif; bila tidak, dilewati.

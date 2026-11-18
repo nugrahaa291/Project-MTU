@@ -41,7 +41,7 @@ class AbsensiApiTest extends TestCase
     {
         $this->app['auth']->forgetGuards(); // satu pengujian = satu aplikasi; lupakan pengguna dari permintaan sebelumnya
         $token = $this->postJson('/api/login', [
-            'email' => $k->user->email, 'password' => 'RahasiaBaru1', 'device_name' => $perangkat,
+            'nip' => $k->nip, 'pin' => self::PIN_KARYAWAN, 'device_name' => $perangkat,
         ])->assertOk()->json('token');
 
         return ['Authorization' => "Bearer $token"];
@@ -57,16 +57,16 @@ class AbsensiApiTest extends TestCase
     {
         $k = $this->karyawan();
 
-        $this->postJson('/api/login', ['email' => $k->user->email, 'password' => 'RahasiaBaru1', 'device_name' => 'Pixel'])
+        $this->postJson('/api/login', ['nip' => $k->nip, 'pin' => self::PIN_KARYAWAN, 'device_name' => 'Pixel'])
             ->assertOk()
-            ->assertJsonStructure(['token', 'token_type', 'expires_at', 'must_change_password', 'karyawan' => ['nama', 'nip', 'jabatan']]);
+            ->assertJsonStructure(['token', 'token_type', 'expires_at', 'must_change_pin', 'karyawan' => ['nama', 'nip', 'jabatan']]);
 
-        $this->postJson('/api/login', ['email' => $k->user->email, 'password' => 'salah', 'device_name' => 'Pixel'])->assertUnauthorized();
-        $this->postJson('/api/login', ['email' => 'tidakada@example.com', 'password' => 'x', 'device_name' => 'Pixel'])->assertUnauthorized();
+        $this->postJson('/api/login', ['nip' => $k->nip, 'pin' => '000001', 'device_name' => 'Pixel'])->assertUnauthorized();
+        $this->postJson('/api/login', ['nip' => 'TIDAK-ADA', 'pin' => '123456', 'device_name' => 'Pixel'])->assertUnauthorized();
 
-        // HRD tidak bisa memakai aplikasi absensi
+        // HRD tidak punya NIP karyawan, jadi tidak bisa memakai aplikasi absensi
         $hrd = $this->hrd();
-        $this->postJson('/api/login', ['email' => $hrd->email, 'password' => 'password', 'device_name' => 'Pixel'])->assertForbidden();
+        $this->postJson('/api/login', ['nip' => $hrd->email, 'pin' => 'password', 'device_name' => 'Pixel'])->assertUnauthorized();
     }
 
     public function test_tanpa_token_ditolak_dan_logout_mencabut_token(): void
@@ -226,16 +226,16 @@ class AbsensiApiTest extends TestCase
         $this->absen('masuk', $this->masukApi($k))->assertStatus(409);
     }
 
-    public function test_password_sementara_memblokir_absensi_sampai_diganti(): void
+    public function test_pin_sementara_memblokir_absensi_sampai_didaftarkan(): void
     {
         $k = $this->karyawan(wajibGantiPassword: true);
         $header = $this->masukApi($k);
 
-        $this->getJson('/api/absensi/hari-ini', $header)->assertForbidden()->assertJsonPath('kode', 'wajib_ganti_password');
+        $this->getJson('/api/absensi/hari-ini', $header)->assertForbidden()->assertJsonPath('kode', 'wajib_ganti_pin');
         $this->absen('masuk', $header)->assertForbidden();
 
-        $this->putJson('/api/password', [
-            'password_lama' => 'RahasiaBaru1', 'password' => 'PasswordBaru9', 'password_confirmation' => 'PasswordBaru9',
+        $this->putJson('/api/pin', [
+            'pin_lama' => self::PIN_KARYAWAN, 'pin' => '739418', 'pin_confirmation' => '739418',
         ], $header)->assertOk();
 
         $this->getJson('/api/absensi/hari-ini', $header)->assertOk();
@@ -251,7 +251,7 @@ class AbsensiApiTest extends TestCase
 
         $this->app['auth']->forgetGuards();
         $this->getJson('/api/me', $header)->assertUnauthorized();
-        $this->postJson('/api/login', ['email' => $k->user->email, 'password' => 'RahasiaBaru1', 'device_name' => 'x'])->assertUnauthorized();
+        $this->postJson('/api/login', ['nip' => $k->nip, 'pin' => self::PIN_KARYAWAN, 'device_name' => 'x'])->assertUnauthorized();
     }
 
     public function test_token_karyawan_tidak_bisa_masuk_area_hrd_dan_hrd_tidak_bisa_pakai_api_absensi(): void
