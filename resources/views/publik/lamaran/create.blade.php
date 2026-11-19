@@ -2,9 +2,9 @@
 @section('judul', 'Lamar: '.$lowongan->judul)
 
 @section('content')
-    <div class="mx-auto max-w-3xl px-4 py-10">
-        <a href="{{ route('lowongan.show', $lowongan) }}" class="text-sm text-gray-500 hover:text-brand">&larr; Kembali ke detail lowongan</a>
-        <h1 class="mt-2 text-2xl font-bold">Form Lamaran</h1>
+    <div class="mx-auto max-w-3xl px-5 py-10">
+        <a href="{{ route('lowongan.show', $lowongan) }}" class="text-sm text-focus">&larr; Kembali ke detail lowongan</a>
+        <h1 class="mt-2 text-3xl font-semibold tracking-tight">Form Lamaran</h1>
         <p class="mb-6 text-gray-600">{{ $lowongan->judul }} &middot; {{ $lowongan->jabatan->nama }}</p>
 
         @if ($errors->any())
@@ -20,13 +20,13 @@
 
         <form data-lamaran method="POST" action="{{ route('lamaran.store', $lowongan) }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            <div class="card p-4" data-kemajuan hidden>
-                <label class="label" for="kemajuan">Kelengkapan isian wajib <span data-jumlah></span></label>
-                <progress id="kemajuan" class="w-full accent-brand-dark"></progress>
+            <div class="rounded-lg bg-canvas p-4" data-kemajuan hidden>
+                <label class="label" for="kemajuan"><span data-jumlah></span></label>
+                <progress id="kemajuan" class="block h-2 w-full accent-focus"></progress>
             </div>
 
-            <fieldset class="card space-y-4 p-6">
-                <legend class="px-1 text-base font-bold">1. Data diri</legend>
+            <fieldset class="min-w-0 space-y-4 border-b border-line pb-6">
+                <legend class="mb-2 text-xl font-semibold tracking-tight">1. Data diri</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
                     <x-field name="nama" label="Nama Lengkap" required />
@@ -49,8 +49,8 @@
                 <x-field name="alamat" label="Alamat Lengkap" as="textarea" rows="3" required />
             </fieldset>
 
-            <fieldset class="card space-y-4 p-6">
-                <legend class="px-1 text-base font-bold">2. Berkas</legend>
+            <fieldset class="min-w-0 space-y-4 border-b border-line pb-6">
+                <legend class="mb-2 text-xl font-semibold tracking-tight">2. Berkas</legend>
                 <p class="text-sm text-gray-500">Berkas disimpan aman dan hanya dapat dilihat oleh HRD.</p>
                 <x-field name="cv" label="CV" type="file" accept=".pdf,.doc,.docx" hint="PDF/DOC/DOCX, maks. 3 MB." required />
                 <x-field name="pas_foto" label="Pas Foto" type="file" accept=".jpg,.jpeg,.png" hint="JPG/PNG, maks. 2 MB." required />

@@ -44,7 +44,7 @@ if (lamaran) {
     meter.max = wajib.length;
     const perbarui = () => {
         meter.value = wajib.filter(kolom => kolom.value.trim() && kolom.validity.valid).length;
-        lamaran.querySelector('[data-jumlah]').textContent = `(${meter.value}/${meter.max})`;
+        lamaran.querySelector('[data-jumlah]').textContent = `${meter.value} dari ${meter.max} isian wajib lengkap`;
     };
     lamaran.addEventListener('input', perbarui);
     window.addEventListener('pageshow', perbarui);

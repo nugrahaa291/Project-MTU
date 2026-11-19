@@ -2,27 +2,27 @@
 @section('judul', $lowongan->judul)
 
 @section('content')
-    <section class="border-b-4 border-brand bg-ink text-white">
-        <div class="mx-auto max-w-4xl px-4 py-12">
-            <a href="{{ route('lowongan.index') }}" class="text-sm text-gray-300 hover:text-white">&larr; Semua lowongan</a>
-            <h1 class="mt-3 text-3xl font-bold">{{ $lowongan->judul }}</h1>
-            <p class="mt-2 text-gray-300">{{ $lowongan->jabatan->nama }} &middot; {{ $lowongan->lokasi }}</p>
+    <section class="border-b border-line">
+        <div class="mx-auto max-w-4xl px-5 pt-10 pb-6">
+            <a href="{{ route('lowongan.index') }}" class="text-sm text-focus">&larr; Semua lowongan</a>
+            <h1 class="mt-3 text-3xl font-semibold tracking-tight">{{ $lowongan->judul }}</h1>
+            <p class="mt-2 text-gray-600">{{ $lowongan->jabatan->nama }} &middot; {{ $lowongan->lokasi }}</p>
         </div>
     </section>
 
-    <div class="mx-auto grid max-w-4xl gap-6 px-4 py-10 md:grid-cols-3">
+    <div class="mx-auto grid max-w-4xl gap-8 px-5 py-8 md:grid-cols-3">
         <div class="space-y-6 md:col-span-2">
-            <div class="card p-6">
+            <div class="border-b border-line pb-6">
                 <h2 class="mb-2 text-lg font-bold">Deskripsi Pekerjaan</h2>
                 <p class="whitespace-pre-line text-gray-700">{{ $lowongan->deskripsi ?: 'Belum ada deskripsi.' }}</p>
             </div>
-            <div class="card p-6">
+            <div class="border-b border-line pb-6">
                 <h2 class="mb-2 text-lg font-bold">Persyaratan</h2>
                 <p class="whitespace-pre-line text-gray-700">{{ $lowongan->persyaratan ?: 'Belum ada persyaratan khusus.' }}</p>
             </div>
         </div>
 
-        <aside class="card h-fit md:sticky md:top-24 space-y-3 p-6 text-sm">
+        <aside class="card order-first h-fit md:order-last md:sticky md:top-24 space-y-3 p-5 text-sm">
             <div class="flex items-center justify-between">
                 <span class="text-gray-500">Status</span>
                 <x-badge :warna="$lowongan->bisaDilamar() ? 'green' : 'red'">{{ $lowongan->labelStatus() }}</x-badge>
