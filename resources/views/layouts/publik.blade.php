@@ -15,7 +15,7 @@
                 MTU<span class="text-brand">.</span>
             </a>
             <nav class="flex flex-wrap items-center gap-x-3 text-sm font-medium">
-                <a href="{{ route('lowongan.index') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Lowongan Kerja</a>
+                <a href="{{ route('lowongan.index') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Lowongan</a>
                 <a href="{{ route('status.form') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Cek Status</a>
                 @auth
                     <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>

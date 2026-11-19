@@ -591,7 +591,7 @@ function alurOrder() {
         o.galatPosisiSelfie = null;
 
         const galat = kotakGalat();
-        const info = h('div', { class: 'info-order', id: 'info-order' });
+        const info = h('div', { class: 'info-order', id: 'info-order', role: 'status' });
         const kirimBtn = h('button', { class: 'tombol', id: 'kirim-order', type: 'button', disabled: true }, 'Kirim Order');
         const ulangi = h('button', { class: 'tombol garis', id: 'ulangi-foto', type: 'button', onclick: tahapKamera }, 'Ulangi Foto');
         const cobaLokasi = h('button', { class: 'tombol garis hidden', id: 'coba-lagi-selfie', type: 'button' }, 'Coba Lagi Lokasi');
@@ -603,7 +603,7 @@ function alurOrder() {
                 h('div', {}, h('span', { class: 'muted' }, 'Lokasi HP saat selfie: '),
                     p ? h('strong', {}, `${formatKoordinat(p.latitude, p.longitude)} (±${Math.round(p.akurasi)} m)`)
                         : h('span', { class: o.galatPosisiSelfie ? 'merah' : 'muted' }, o.galatPosisiSelfie || 'Membaca lokasi...')),
-                h('div', { class: 'muted kecil' }, 'Watermark (lokasi aktual, tanggal dan jam WIB, logo MTU) dibubuhkan otomatis di server saat foto disimpan. Waktu resmi mengikuti server.'));
+                h('div', { class: 'muted kecil' }, 'Watermark foto memuat lokasi, waktu server (WIB), dan logo MTU.'));
         };
 
         const bacaLokasi = () => {
