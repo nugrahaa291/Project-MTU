@@ -1,8 +1,9 @@
 // Service worker aplikasi absensi.
 // Aturan penting: permintaan /api/* TIDAK PERNAH disentuh. Absensi harus online karena waktu dan
 // lokasi diverifikasi server; antrean offline justru membuka celah memalsukan jam.
-const CACHE = 'absen-v3';
-const SHELL = ['/absen', '/pwa/style.css', '/pwa/app.js', '/pwa/lib.js', '/pwa/api.js', '/pwa/icons/icon-192.png'];
+const CACHE = 'absen-v4';
+const SHELL = ['/absen', '/pwa/style.css', '/pwa/app.js', '/pwa/lib.js', '/pwa/api.js', '/pwa/icons/icon-192.png',
+    '/pwa/fonts/poppins.css', ...[400, 500, 600, 700].map(w => `/pwa/fonts/poppins-latin-${w}-normal.woff2`)];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(

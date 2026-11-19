@@ -203,6 +203,40 @@ function layarGanti() {
     );
 }
 
+// Ikon garis memakai geometri lokal agar tetap tersedia saat offline.
+const bentukIkon = {
+    beranda: 'M3 10 12 3l9 7v11h-6v-7H9v7H3z',
+    riwayat: 'M3 11a9 9 0 1 1 2 7M3 5v6h6m3-4v5l3 2',
+    akun: 'M16 8a4 4 0 1 1-8 0 4 4 0 1 1 8 0zM4 21v-2a8 8 0 0 1 16 0v2',
+    standby: 'M8 5v14m8-14v14',
+    order: 'M2 5h12v12H2zM14 9h4l4 5v3h-8M8 18a2 2 0 1 1-4 0 2 2 0 1 1 4 0m12 0a2 2 0 1 1-4 0 2 2 0 1 1 4 0',
+    izin: 'M4 5h16v16H4zm0 5h16M8 3v4m8-4v4',
+    sakit: 'M12 5v14m-7-7h14',
+    lainnya: 'M4 4h16v13H9l-5 4zM8 9h8m-8 4h5',
+    absen: 'M3 8V4h5m8 0h5v4m0 8v4h-5m-8 0H3v-4m4-4 3 3 6-6',
+};
+function ikon(nama) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', 'ikon');
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', bentukIkon[nama]);
+    svg.append(path);
+    return svg;
+}
+
+function barisKegiatan(k) {
+    const t = ringkasKegiatan(k);
+    return h('div', { class: 'item-riwayat aktivitas', 'data-jenis': k.jenis },
+        h('time', {}, formatJam(k.jam)),
+        h('div', { class: 'rincian' },
+            h('strong', {}, t.judul),
+            t.rinci ? h('div', { class: 'j' }, t.rinci) : null,
+            h('span', { class: `lencana ${t.warna}` }, k.status_label)));
+}
+
 /* ----------------------------------------------------------- layar: utama */
 function tabBeranda() {
     const r = S.ringkasan;
@@ -210,12 +244,7 @@ function tabBeranda() {
 
     const hariIni = r?.hari_ini ?? [];
     const daftarHariIni = hariIni.length
-        ? hariIni.map((k) => {
-            const t = ringkasKegiatan(k);
-            return h('div', { class: 'item-riwayat', 'data-jenis': k.jenis },
-                h('div', {}, h('div', { class: 't' }, t.judul), h('div', { class: 'j' }, `${formatJam(k.jam)} WIB${t.rinci ? ` · ${t.rinci}` : ''}`)),
-                h('span', { class: `lencana ${t.warna}` }, k.status_label));
-        })
+        ? hariIni.map(barisKegiatan)
         : h('div', { class: 'muted' }, 'Belum ada aktivitas. Ketuk Absen untuk mencatat kegiatan pertama.');
 
     const izin = (r?.izin_lainnya ?? []).slice(0, 3);
@@ -223,9 +252,9 @@ function tabBeranda() {
     return h('div', {},
         h('div', { class: 'kartu kartu-jam' },
             h('div', { class: 'tgl' }, formatTanggalPanjang(sekarang)),
-            h('div', { class: 'jam', id: 'jam' }, formatJamLengkap(sekarang)),
-            h('div', { class: 'muted' }, 'Waktu server · WIB')),
-        h('div', { class: 'kartu', id: 'kartu-hari-ini' }, h('div', { class: 'muted judul-kartu' }, 'Aktivitas hari ini'), daftarHariIni),
+            h('div', { class: 'waktu' }, h('time', { class: 'jam', id: 'jam' }, formatJamLengkap(sekarang)), h('span', {}, 'WIB')),
+            h('div', { class: 'sumber-jam' }, 'Waktu server')),
+        h('div', { class: 'kartu', id: 'kartu-hari-ini' }, h('div', { class: 'judul-baris' }, h('h2', {}, 'Aktivitas hari ini'), h('span', { class: 'muted' }, `${hariIni.length} catatan`)), daftarHariIni),
         izin.length
             ? h('div', { class: 'kartu', id: 'kartu-izin' },
                 h('div', { class: 'muted judul-kartu' }, 'Pengajuan izin Lain-lain'),
@@ -236,9 +265,7 @@ function tabBeranda() {
                         h('span', { class: `lencana ${t.warna}` }, k.status_label));
                 }))
             : null,
-        h('div', { class: 'tombol-wadah' },
-            h('button', { class: 'tombol besar tombol-absen', id: 'tombol-absen', type: 'button', disabled: !S.online || !S.ringkasan, onclick: bukaPilihan },
-                S.online ? 'Absen' : 'Tidak ada koneksi')),
+
     );
 }
 
@@ -256,10 +283,7 @@ function tabRiwayat() {
     const perTanggal = new Map();
     for (const k of S.riwayat.data || []) {
         if (!perTanggal.has(k.tanggal)) perTanggal.set(k.tanggal, []);
-        const t = ringkasKegiatan(k);
-        perTanggal.get(k.tanggal).push(h('div', { class: 'item-riwayat' },
-            h('div', {}, h('div', { class: 't' }, `${formatJam(k.jam)} WIB`), h('div', { class: 'j' }, `${t.judul}${t.rinci ? ` · ${t.rinci}` : ''}`)),
-            h('span', { class: `lencana ${t.warna}` }, k.status_label)));
+        perTanggal.get(k.tanggal).push(barisKegiatan(k));
     }
     const baris = [...perTanggal].map(([tanggal, daftar]) => h('section', {}, h('h3', { class: 'tanggal-grup' }, formatTanggalPendek(tanggal)), daftar));
     const lama = (S.riwayat.absensi_lama || []).map((a) => h('div', { class: 'item-riwayat' },
@@ -296,16 +320,22 @@ function tabAkun() {
 
 function layarUtama() {
     const isi = S.tab === 'beranda' ? tabBeranda() : S.tab === 'riwayat' ? tabRiwayat() : tabAkun();
-    const tab = (id, ikon, label) => h('button', { class: S.tab === id ? 'aktif' : '', 'aria-current': S.tab === id ? 'page' : null, type: 'button', onclick: () => { S.tab = id; if (id === 'riwayat') muatRiwayat(); else render(); } }, h('span', { class: 'ik', 'aria-hidden': 'true' }, ikon), label);
+    const tab = (id, label) => h('button', { class: S.tab === id ? 'aktif' : '', 'aria-current': S.tab === id ? 'page' : null, type: 'button', onclick: () => { S.tab = id; if (id === 'riwayat') muatRiwayat(); else render(); } }, ikon(id), label);
 
-    return h('div', {},
-        h('div', { class: `offline ${S.online ? 'hidden' : ''}`, id: 'banner-offline' }, 'Tidak ada koneksi internet. Absen membutuhkan koneksi.'),
-        h('div', { class: 'atas' },
-            h('div', { class: 'baris' },
-                h('div', {}, h('div', { class: 'nama' }, S.profil?.nama || 'Karyawan'), h('div', { class: 'jabatan' }, S.profil?.jabatan || '')),
-                h('div', { class: 'logo' }, 'MTU', h('span', {}, '.')))),
-        h('div', { class: 'konten' }, isi),
-        h('nav', { class: 'nav' }, tab('beranda', '⌂', 'Beranda'), tab('riwayat', '☰', 'Riwayat'), tab('akun', '☺', 'Akun')),
+    const nama = S.profil?.nama || 'Karyawan';
+    const inisial = nama.trim().split(/\s+/).slice(0, 2).map(bagian => bagian.charAt(0)).join('');
+    return h('div', { class: 'layar-utama' },
+        h('header', { class: 'atas' }, h('b', { class: 'logo' }, 'MTU', h('span', {}, '.')), h('span', {}, 'Absensi karyawan')),
+        h('div', { class: `offline ${S.online ? 'hidden' : ''}`, id: 'banner-offline', role: 'status' }, 'Tidak ada koneksi internet. Absen membutuhkan koneksi.'),
+        h('div', { class: 'konten' },
+            S.tab === 'beranda' ? h('div', { class: 'profil' },
+                h('span', { class: 'inisial', 'aria-hidden': 'true' }, inisial),
+                h('div', {}, h('strong', {}, nama), h('div', { class: 'muted' }, [S.profil?.jabatan, S.profil?.nip].filter(Boolean).join(' · ')))) : null,
+            isi),
+        S.tab === 'beranda' ? h('div', { class: 'tombol-wadah' },
+            h('button', { class: 'tombol besar tombol-absen', id: 'tombol-absen', type: 'button', disabled: !S.online || !S.ringkasan, onclick: bukaPilihan },
+                ikon('absen'), S.online ? 'Absen' : 'Tidak ada koneksi')) : null,
+        h('nav', { class: 'nav', 'aria-label': 'Navigasi utama' }, tab('beranda', 'Beranda'), tab('riwayat', 'Riwayat'), tab('akun', 'Akun')),
     );
 }
 
@@ -382,16 +412,19 @@ async function kirim({ tombol, galat, jalankan }) {
 const kotakGalat = () => h('div', { class: 'galat hidden', role: 'alert' });
 
 /* ------------------------------------------------------------ pilih jenis */
+function pilihan(id, simbol, judul, isi, aksi) {
+    return h('button', { class: 'pilihan', id, type: 'button', onclick: aksi },
+        ikon(simbol), h('span', {}, h('strong', {}, judul), h('span', { class: 'muted' }, isi)));
+}
+
 function bukaPilihan() {
     if (!S.online) return toast('Tidak ada koneksi internet.', 'err');
     bukaSheet('Pilih jenis absen');
-    const pilihan = (id, judul, isi, aksi) => h('button', { class: 'pilihan', id, type: 'button', onclick: aksi },
-        h('strong', {}, judul), h('span', { class: 'muted' }, isi));
     isiSheet(
         h('div', { class: 'pilihan-daftar' },
-            pilihan('pilih-standby', 'Standby', 'Siap bertugas. Langsung kirim, tanpa lokasi atau foto.', alurStandby),
-            pilihan('pilih-order', 'Order', 'Mengantar. Isi tujuan, lokasi HP, dan selfie.', alurOrder),
-            pilihan('pilih-izin', 'Izin', 'Libur, sakit, atau keperluan lain.', alurIzin)),
+            pilihan('pilih-standby', 'standby', 'Standby', 'Catat bahwa Anda siap bertugas.', alurStandby),
+            pilihan('pilih-order', 'order', 'Order', 'Catat tujuan dan pengantaran Anda.', alurOrder),
+            pilihan('pilih-izin', 'izin', 'Izin', 'Libur, sakit, atau keperluan lain.', alurIzin)),
     );
 }
 
@@ -438,10 +471,10 @@ function alurOrder() {
     /* Tahap 1: tujuan pengantaran */
     function tahapTujuan() {
         o.percobaan++;
-        s.judul.textContent = 'Order: tujuan pengantaran';
+        s.judul.textContent = 'Tujuan pengantaran';
         const galat = kotakGalat();
         const input = h('input', { type: 'text', id: 'tujuan', maxlength: '255', value: o.tujuan, placeholder: 'Contoh: Gudang PT Maju Jaya, Cikarang', autocomplete: 'off' });
-        const lanjut = h('button', { class: 'tombol', id: 'lanjut-tujuan', type: 'button' }, 'Lanjut');
+        const lanjut = h('button', { class: 'tombol', id: 'lanjut-tujuan', type: 'button' }, 'Lanjut ke lokasi');
         lanjut.onclick = () => {
             const nilai = input.value.replace(/\s+/g, ' ').trim();
             if (nilai.length < 3) {
@@ -451,7 +484,7 @@ function alurOrder() {
             o.tujuan = nilai;
             tahapLokasi();
         };
-        isiSheet(langkah(0), h('label', { for: 'tujuan' }, 'Lokasi tujuan pengantaran'), input, galat,
+        isiSheet(langkah(0), h('label', { for: 'tujuan' }, 'Nama tempat atau alamat'), input, h('p', { class: 'petunjuk' }, 'Lokasi HP diperiksa sebelum kamera dibuka.'), galat,
             h('div', { class: 'aksi' }, h('button', { class: 'tombol garis', type: 'button', onclick: bukaPilihan }, 'Kembali'), lanjut));
     }
 
@@ -619,12 +652,11 @@ function alurIzin() {
 
     function tahapPilih() {
         s.judul.textContent = 'Izin';
-        const opsi = (id, judul, isi, aksi) => h('button', { class: 'pilihan', id, type: 'button', onclick: aksi }, h('strong', {}, judul), h('span', { class: 'muted' }, isi));
         isiSheet(
             h('div', { class: 'pilihan-daftar' },
-                opsi('izin-libur', 'Libur', 'Langsung kirim.', () => tahapDetail('libur')),
-                opsi('izin-sakit', 'Sakit', 'Wajib unggah Surat Keterangan Dokter (SKD).', () => tahapDetail('sakit')),
-                opsi('izin-lain', 'Lain-lain', 'Keperluan mendadak, mis. musibah. Wajib mengisi alasan.', () => tahapDetail('lainnya'))),
+                pilihan('izin-libur', 'izin', 'Libur', 'Langsung kirim.', () => tahapDetail('libur')),
+                pilihan('izin-sakit', 'sakit', 'Sakit', 'Wajib unggah Surat Keterangan Dokter (SKD).', () => tahapDetail('sakit')),
+                pilihan('izin-lain', 'lainnya', 'Lain-lain', 'Keperluan mendadak, mis. musibah. Wajib mengisi alasan.', () => tahapDetail('lainnya'))),
             h('div', { class: 'aksi' }, h('button', { class: 'tombol garis', type: 'button', onclick: bukaPilihan }, 'Kembali')),
         );
     }

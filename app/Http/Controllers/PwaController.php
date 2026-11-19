@@ -19,8 +19,8 @@ class PwaController extends Controller
             ->view('pwa.index', ['versi' => $versi])
             ->withHeaders([
                 // Hanya skrip dari domain sendiri: token login tidak bisa dibaca skrip luar
-                'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
-                    ."font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; "
+                'Content-Security-Policy' => "default-src 'self'; script-src 'self'; style-src 'self'; "
+                    ."font-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; "
                     ."worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
                 'Permissions-Policy' => 'camera=(self), geolocation=(self), microphone=()',
                 'X-Content-Type-Options' => 'nosniff',

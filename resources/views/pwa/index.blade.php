@@ -12,9 +12,7 @@
     <link rel="manifest" href="/absen/manifest.webmanifest">
     <link rel="icon" type="image/png" href="/pwa/icons/icon-192.png">
     <link rel="apple-touch-icon" href="/pwa/icons/apple-touch-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('pwa/fonts/poppins.css') }}">
     <link rel="stylesheet" href="/pwa/style.css?v={{ $versi }}">
 </head>
 <body>
