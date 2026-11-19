@@ -2,42 +2,37 @@
 @section('judul', 'Aktivitas Absensi')
 
 @section('content')
-    <form method="GET" class="card mb-4 grid gap-3 p-4 sm:grid-cols-3 xl:grid-cols-6 items-end">
+    <form method="GET" class="filter-row">
         <label class="block text-sm font-semibold">Dari tanggal
             <input type="date" name="dari" value="{{ $dari }}" class="input">
         </label>
-
         <label class="block text-sm font-semibold">Sampai tanggal
             <input type="date" name="sampai" value="{{ $sampai }}" class="input">
         </label>
-
         <label class="block text-sm font-semibold">Karyawan
             <select name="karyawan_id" class="input">
-            <option value="">Semua karyawan</option>
-            @foreach ($karyawan as $k)
-                <option value="{{ $k->id }}" @selected(request('karyawan_id') == $k->id)>{{ $k->nama }}</option>
-            @endforeach
-        </select>
+                <option value="">Semua karyawan</option>
+                @foreach ($karyawan as $k)
+                    <option value="{{ $k->id }}" @selected(request('karyawan_id') == $k->id)>{{ $k->nama }}</option>
+                @endforeach
+            </select>
         </label>
-
         <label class="block text-sm font-semibold">Jenis kegiatan
             <select name="jenis" class="input">
-            <option value="">Semua jenis</option>
-            @foreach (\App\Enums\JenisKegiatan::cases() as $j)
-                <option value="{{ $j->value }}" @selected(request('jenis') === $j->value)>{{ $j->label() }}</option>
-            @endforeach
-        </select>
+                <option value="">Semua jenis</option>
+                @foreach (\App\Enums\JenisKegiatan::cases() as $j)
+                    <option value="{{ $j->value }}" @selected(request('jenis') === $j->value)>{{ $j->label() }}</option>
+                @endforeach
+            </select>
         </label>
-
         <label class="block text-sm font-semibold">Status kegiatan
             <select name="status" class="input">
-            <option value="">Semua status</option>
-            @foreach (\App\Enums\StatusKegiatan::cases() as $s)
-                <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
-            @endforeach
-        </select>
+                <option value="">Semua status</option>
+                @foreach (\App\Enums\StatusKegiatan::cases() as $s)
+                    <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
+                @endforeach
+            </select>
         </label>
-
         <button class="btn btn-dark">Tampilkan</button>
     </form>
 

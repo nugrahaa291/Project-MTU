@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="{{ asset('pwa/fonts/poppins.css') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="flex min-h-screen items-center justify-center bg-ink px-4">
+<body class="flex min-h-screen items-center justify-center bg-canvas px-5">
     <div class="w-full max-w-sm">
-        <a href="{{ route('lowongan.index') }}" class="mb-6 block text-center text-3xl font-bold text-white">
+        <a href="{{ route('lowongan.index') }}" class="mb-6 block text-4xl font-bold tracking-tighter text-ink">
             MTU<span class="text-brand">.</span>
         </a>
 
@@ -28,7 +28,7 @@
             </form>
         </div>
 
-        <p class="mt-4 text-center text-sm text-gray-400">
+        <p class="mt-4 text-center text-sm text-gray-600">
             Karyawan? <a href="{{ route('pwa') }}" class="font-semibold text-brand">Masuk ke halaman Absen</a> dengan NIP dan PIN.<br>
             Mencari lowongan? <a href="{{ route('lowongan.index') }}" class="font-semibold text-brand">Lihat di sini</a>
         </p>

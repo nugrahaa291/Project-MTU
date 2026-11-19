@@ -4,7 +4,6 @@
 @section('content')
     @php
         $kartu = [
-            ['Izin menunggu keputusan', $statistik['izin_menunggu'], route('hrd.izin.index')],
             ['Lowongan dibuka', $statistik['lowongan_dibuka'], route('hrd.lowongan.index')],
             ['Lamaran baru', $statistik['lamaran_baru'], route('hrd.lamaran.index', ['status' => 'diajukan'])],
             ['Dalam seleksi', $statistik['lamaran_seleksi'], route('hrd.lamaran.index', ['status' => 'seleksi'])],
@@ -13,11 +12,16 @@
         ];
     @endphp
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <a class="priority-link" href="{{ route('hrd.izin.index') }}">
+        <strong>{{ $statistik['izin_menunggu'] }}</strong>
+        <span class="font-semibold">Izin menunggu keputusan</span>
+        <span class="action">Lihat pengajuan &rarr;</span>
+    </a>
+    <div class="summary-stats">
         @foreach ($kartu as [$label, $angka, $url])
-            <a href="{{ $url }}" class="card stat-link p-5 transition hover:shadow-md {{ $loop->first ? 'prioritas' : '' }}" >
-                <p class="text-sm font-medium">{{ $label }}</p>
+            <a href="{{ $url }}" class="stat-link">
                 <strong>{{ $angka }}</strong>
+                <span>{{ $label }}</span>
             </a>
         @endforeach
     </div>

@@ -2,20 +2,26 @@
 @section('judul', 'Lamaran Masuk')
 
 @section('content')
-    <form method="GET" class="card mb-4 grid gap-3 p-4 sm:grid-cols-4">
-        <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIK / kode" class="input">
-        <select name="lowongan_id" class="input">
-            <option value="">Semua lowongan</option>
-            @foreach ($daftarLowongan as $l)
-                <option value="{{ $l->id }}" @selected(request('lowongan_id') == $l->id)>{{ $l->judul }}</option>
-            @endforeach
-        </select>
-        <select name="status" class="input">
-            <option value="">Semua status</option>
-            @foreach (\App\Enums\StatusLamaran::cases() as $s)
-                <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
-            @endforeach
-        </select>
+    <form method="GET" class="filter-row">
+        <label>Cari pelamar
+            <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIK / kode" class="input">
+        </label>
+        <label>Lowongan
+            <select name="lowongan_id" class="input">
+                <option value="">Semua lowongan</option>
+                @foreach ($daftarLowongan as $l)
+                    <option value="{{ $l->id }}" @selected(request('lowongan_id') == $l->id)>{{ $l->judul }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>Status lamaran
+            <select name="status" class="input">
+                <option value="">Semua status</option>
+                @foreach (\App\Enums\StatusLamaran::cases() as $s)
+                    <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
+                @endforeach
+            </select>
+        </label>
         <button class="btn btn-dark">Filter</button>
     </form>
 

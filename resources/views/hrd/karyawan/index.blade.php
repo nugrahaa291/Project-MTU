@@ -2,14 +2,18 @@
 @section('judul', 'Karyawan')
 
 @section('content')
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <form method="GET" class="flex gap-2">
-            <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIP / NIK" class="input w-64">
-            <select name="aktif" class="input w-36">
-                <option value="">Semua</option>
-                <option value="1" @selected(request('aktif') === '1')>Aktif</option>
-                <option value="0" @selected(request('aktif') === '0')>Nonaktif</option>
-            </select>
+    <div class="mb-4">
+        <form method="GET" class="filter-row">
+            <label>Cari karyawan
+                <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIP / NIK" class="input">
+            </label>
+            <label>Status karyawan
+                <select name="aktif" class="input">
+                    <option value="">Semua</option>
+                    <option value="1" @selected(request('aktif') === '1')>Aktif</option>
+                    <option value="0" @selected(request('aktif') === '0')>Nonaktif</option>
+                </select>
+            </label>
             <button class="btn btn-dark">Cari</button>
         </form>
         <a href="{{ route('hrd.karyawan.create') }}" class="btn btn-primary">+ Tambah Karyawan</a>
