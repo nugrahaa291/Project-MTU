@@ -212,19 +212,19 @@ function tabBeranda() {
     const daftarHariIni = hariIni.length
         ? hariIni.map((k) => {
             const t = ringkasKegiatan(k);
-            return h('div', { class: 'item-riwayat' },
+            return h('div', { class: 'item-riwayat', 'data-jenis': k.jenis },
                 h('div', {}, h('div', { class: 't' }, t.judul), h('div', { class: 'j' }, `${formatJam(k.jam)} WIB${t.rinci ? ` · ${t.rinci}` : ''}`)),
                 h('span', { class: `lencana ${t.warna}` }, k.status_label));
         })
-        : h('div', { class: 'muted' }, 'Belum ada catatan hari ini.');
+        : h('div', { class: 'muted' }, 'Belum ada aktivitas. Ketuk Absen untuk mencatat kegiatan pertama.');
 
     const izin = (r?.izin_lainnya ?? []).slice(0, 3);
 
     return h('div', {},
-        h('div', { class: 'kartu' },
+        h('div', { class: 'kartu kartu-jam' },
             h('div', { class: 'tgl' }, formatTanggalPanjang(sekarang)),
             h('div', { class: 'jam', id: 'jam' }, formatJamLengkap(sekarang)),
-            h('div', { class: 'muted' }, 'Waktu WIB (mengikuti server)')),
+            h('div', { class: 'muted' }, 'Waktu server · WIB')),
         h('div', { class: 'kartu', id: 'kartu-hari-ini' }, h('div', { class: 'muted judul-kartu' }, 'Aktivitas hari ini'), daftarHariIni),
         izin.length
             ? h('div', { class: 'kartu', id: 'kartu-izin' },
@@ -253,12 +253,15 @@ function tabRiwayat() {
     if (!S.riwayat) return h('div', {}, nav, h('div', { class: 'kartu muted' }, 'Memuat riwayat...'));
 
     const chip = Object.entries(S.riwayat.ringkasan || {}).map(([j, n]) => h('span', { class: 'lencana slate' }, `${j} ${n}`));
-    const baris = (S.riwayat.data || []).map((k) => {
+    const perTanggal = new Map();
+    for (const k of S.riwayat.data || []) {
+        if (!perTanggal.has(k.tanggal)) perTanggal.set(k.tanggal, []);
         const t = ringkasKegiatan(k);
-        return h('div', { class: 'item-riwayat' },
-            h('div', {}, h('div', { class: 't' }, `${formatTanggalPendek(k.tanggal)} · ${formatJam(k.jam)}`), h('div', { class: 'j' }, `${t.judul}${t.rinci ? ` · ${t.rinci}` : ''}`)),
-            h('span', { class: `lencana ${t.warna}` }, k.status_label));
-    });
+        perTanggal.get(k.tanggal).push(h('div', { class: 'item-riwayat' },
+            h('div', {}, h('div', { class: 't' }, `${formatJam(k.jam)} WIB`), h('div', { class: 'j' }, `${t.judul}${t.rinci ? ` · ${t.rinci}` : ''}`)),
+            h('span', { class: `lencana ${t.warna}` }, k.status_label)));
+    }
+    const baris = [...perTanggal].map(([tanggal, daftar]) => h('section', {}, h('h3', { class: 'tanggal-grup' }, formatTanggalPendek(tanggal)), daftar));
     const lama = (S.riwayat.absensi_lama || []).map((a) => h('div', { class: 'item-riwayat' },
         h('div', {}, h('div', { class: 't' }, formatTanggalPendek(a.tanggal)),
             h('div', { class: 'j' }, a.jam_masuk ? `Masuk ${formatJam(a.jam_masuk)} · Pulang ${formatJam(a.jam_pulang)}` : (a.keterangan || 'Dicatat HRD'))),
@@ -311,13 +314,26 @@ let sheet = null; // { el, isi, judul, bersih: [fungsi] }
 
 function bukaSheet(judul) {
     tutupSheet(true);
-    const h2 = h('h2', {}, judul);
+    const h2 = h('h2', { id: 'judul-sheet', tabindex: '-1' }, judul);
     const isi = h('div', { class: 'sheet-isi' });
     const tutup = h('button', { class: 'sheet-tutup', type: 'button', 'aria-label': 'Tutup', onclick: () => tutupSheet() }, '×');
-    const el = h('div', { class: 'sheet', id: 'sheet', role: 'dialog', 'aria-modal': 'true' },
+    const el = h('div', { class: 'sheet', id: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'judul-sheet' },
         h('div', { class: 'panel' }, h('div', { class: 'sheet-kepala' }, h2, tutup), isi));
+    const pemicu = document.activeElement;
+    document.getElementById('app').inert = true;
     document.body.append(el);
-    sheet = { el, isi, judul: h2, bersih: [] };
+    h2.focus();
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') tutupSheet();
+        if (e.key !== 'Tab') return;
+        const fokus = [...el.querySelectorAll('button:enabled, input:enabled, textarea')].filter(node => node.getClientRects().length);
+        const tujuan = e.shiftKey ? fokus.at(-1) : fokus[0];
+        if (document.activeElement === (e.shiftKey ? fokus[0] : fokus.at(-1)) || (e.shiftKey && document.activeElement === h2)) {
+            e.preventDefault();
+            tujuan?.focus();
+        }
+    });
+    sheet = { el, isi, pemicu, judul: h2, bersih: [] };
     return sheet;
 }
 
@@ -326,6 +342,8 @@ function tutupSheet(paksa = false) {
     if (!sheet || (S.mengirim && !paksa)) return;
     for (const f of sheet.bersih) { try { f(); } catch { /* abaikan */ } }
     sheet.el.remove();
+    document.getElementById('app').inert = false;
+    sheet.pemicu?.focus();
     sheet = null;
 }
 
@@ -411,8 +429,13 @@ function alurOrder() {
     const matikanKamera = () => { o.stream?.getTracks().forEach((t) => t.stop()); o.stream = null; };
     s.bersih.push(() => { matikanKamera(); if (o.url) URL.revokeObjectURL(o.url); o.percobaan = -1; });
 
+    const langkah = (aktif) => h('ol', { class: 'langkah', 'aria-label': 'Tahap Order' },
+        ['Tujuan', 'Lokasi', 'Selfie', 'Kirim'].map((nama, i) =>
+            h('li', { 'aria-current': i === aktif ? 'step' : null }, nama)));
+
     /* Tahap 1: tujuan pengantaran */
     function tahapTujuan() {
+        o.percobaan++;
         s.judul.textContent = 'Order: tujuan pengantaran';
         const galat = kotakGalat();
         const input = h('input', { type: 'text', id: 'tujuan', maxlength: '255', value: o.tujuan, placeholder: 'Contoh: Gudang PT Maju Jaya, Cikarang', autocomplete: 'off' });
@@ -426,7 +449,7 @@ function alurOrder() {
             o.tujuan = nilai;
             tahapLokasi();
         };
-        isiSheet(h('label', { for: 'tujuan' }, 'Lokasi tujuan pengantaran'), input, galat,
+        isiSheet(langkah(0), h('label', { for: 'tujuan' }, 'Lokasi tujuan pengantaran'), input, galat,
             h('div', { class: 'aksi' }, h('button', { class: 'tombol garis', type: 'button', onclick: bukaPilihan }, 'Kembali'), lanjut));
     }
 
@@ -439,7 +462,7 @@ function alurOrder() {
         const status = h('div', { class: 'kotak-status cari', id: 'status-lokasi', role: 'status' }, h('span', { class: 'pemuat gelap' }), ' Mencari lokasi terkini HP...');
         const kunci = h('div', { class: 'kamera-terkunci', id: 'kamera-terkunci' }, 'Kamera terkunci sampai lokasi HP terbaca.');
         const aksi = h('div', { class: 'aksi' }, h('button', { class: 'tombol garis', type: 'button', onclick: tahapTujuan }, 'Kembali'));
-        isiSheet(h('p', { class: 'muted' }, `Tujuan: ${o.tujuan}`), status, kunci, aksi);
+        isiSheet(langkah(1), h('p', { class: 'muted' }, `Tujuan: ${o.tujuan}`), status, kunci, aksi);
 
         ambilPosisi({ umurMaks: 0, batas: 20000 }).then((pos) => {
             if (nomor !== o.percobaan || !sheet) return;
@@ -465,7 +488,7 @@ function alurOrder() {
         const area = h('div', { class: 'pratinjau' });
         const galat = kotakGalat();
         const aksi = h('div', { class: 'aksi' });
-        isiSheet(area, galat, aksi);
+        isiSheet(langkah(2), area, galat, aksi);
 
         const batal = h('button', { class: 'tombol garis', type: 'button', onclick: () => { matikanKamera(); tahapLokasi(); } }, 'Kembali');
         const tampilGalat = (t) => { galat.textContent = t; galat.classList.remove('hidden'); };
@@ -508,7 +531,7 @@ function alurOrder() {
         } catch {
             return modeCadangan('Izin kamera ditolak. Izinkan kamera untuk situs ini, atau gunakan tombol di bawah.');
         }
-        if (!sheet) return matikanKamera();
+        if (sheet !== s) return matikanKamera();
 
         const video = h('video', { playsinline: true, muted: true, autoplay: true });
         video.srcObject = o.stream;
@@ -579,7 +602,7 @@ function alurOrder() {
             })),
         });
 
-        isiSheet(h('div', { class: 'pratinjau' }, h('img', { src: o.url, alt: 'Pratinjau selfie' })), info, galat,
+        isiSheet(langkah(3), h('div', { class: 'pratinjau' }, h('img', { src: o.url, alt: 'Pratinjau selfie' })), info, galat,
             h('div', { class: 'aksi' }, ulangi, cobaLokasi, kirimBtn));
         bacaLokasi();
     }
@@ -639,9 +662,14 @@ function alurIzin() {
         } else {
             s.judul.textContent = 'Izin: Lain-lain';
             const alasan = h('textarea', { id: 'alasan', rows: '4', maxlength: '1000', placeholder: 'Jelaskan keperluan mendadak Anda' });
-            alasan.addEventListener('input', () => { kirimBtn.disabled = alasan.value.trim().length < 5; });
+            const hitung = h('small', { class: 'hitung', id: 'jumlah-alasan' }, '0 / 1000 karakter');
+            alasan.setAttribute('aria-describedby', 'jumlah-alasan catatan-izin');
+            alasan.addEventListener('input', () => {
+                hitung.textContent = `${alasan.value.length} / 1000 karakter`;
+                kirimBtn.disabled = alasan.value.trim().length < 5;
+            });
             isi = [
-                h('label', { for: 'alasan' }, 'Alasan (wajib)'), alasan,
+                h('label', { for: 'alasan' }, 'Alasan (wajib)'), alasan, hitung,
                 h('div', { class: 'info', id: 'catatan-izin' }, CATATAN_IZIN_LAIN),
             ];
             ambilNilai = () => ({ kategori, kunci, alasan: alasan.value.trim() });

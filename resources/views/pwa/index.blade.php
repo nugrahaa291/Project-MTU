@@ -19,7 +19,7 @@
 </head>
 <body>
     <div id="app">
-        <noscript><p style="padding:24px">Aplikasi absensi membutuhkan JavaScript.</p></noscript>
+        <noscript><p>Aplikasi absensi membutuhkan JavaScript.</p></noscript>
     </div>
     <div id="toast" aria-live="polite"></div>
     <script type="module" src="/pwa/app.js?v={{ $versi }}"></script>
