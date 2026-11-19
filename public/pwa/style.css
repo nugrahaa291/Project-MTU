@@ -195,3 +195,8 @@ form .tombol { margin-top: 16px; }
 @keyframes muncul { from { transform: translateY(-5px); opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .toast.ok, .pemuat { animation: none; } }
 @media (min-width: 600px) { .sheet { justify-content: center; } }
+.pilihan::before { display: grid; place-items: center; }
+#izin-libur::before { content: '☀' / ''; }
+#izin-sakit::before { content: '+' / ''; }
+#izin-lain::before { content: '…' / ''; }
+#sheet .sheet-kepala h2:focus { outline: none; }

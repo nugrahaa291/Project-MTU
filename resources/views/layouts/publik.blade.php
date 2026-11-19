@@ -14,7 +14,7 @@
     <header class="sticky top-0 z-30 border-b border-line bg-white">
         <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-2 px-4 py-2">
             <a href="{{ route('lowongan.index') }}" class="text-2xl font-bold text-ink">
-                {{ config('app.name') }}<span class="text-brand">.</span>
+                MTU<span class="text-brand">.</span>
             </a>
             <nav class="flex items-center gap-3 text-sm font-medium">
                 <a href="{{ route('lowongan.index') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Lowongan Kerja</a>

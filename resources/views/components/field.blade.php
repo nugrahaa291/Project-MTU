@@ -4,6 +4,13 @@
     as="textarea" atau as="select" (isi <option> lewat slot).
 --}}
 @props(['name', 'label', 'as' => 'input', 'type' => 'text', 'value' => null, 'hint' => null])
+@php
+    $keterangan = trim(($hint ? "$name-hint" : '').' '.($errors->has($name) ? "$name-error" : ''));
+    $attributes = $attributes->merge(array_filter([
+        'aria-describedby' => $keterangan,
+        'aria-invalid' => $errors->has($name) ? 'true' : null,
+    ]));
+@endphp
 <div {{ $attributes->only('class') }}>
     <label for="{{ $name }}" class="label">
         {{ $label }}@if ($attributes->has('required')) <span class="text-brand">*</span>@endif
@@ -26,9 +33,9 @@
     @endif
 
     @if ($hint)
-        <p class="mt-1 text-xs text-gray-500">{{ $hint }}</p>
+        <p id="{{ $name }}-hint" class="mt-1 text-xs text-gray-500">{{ $hint }}</p>
     @endif
     @error($name)
-        <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+        <p id="{{ $name }}-error" class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
     @enderror
 </div>

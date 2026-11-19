@@ -296,7 +296,7 @@ function tabAkun() {
 
 function layarUtama() {
     const isi = S.tab === 'beranda' ? tabBeranda() : S.tab === 'riwayat' ? tabRiwayat() : tabAkun();
-    const tab = (id, ikon, label) => h('button', { class: S.tab === id ? 'aktif' : '', type: 'button', onclick: () => { S.tab = id; if (id === 'riwayat') muatRiwayat(); else render(); } }, h('span', { class: 'ik' }, ikon), label);
+    const tab = (id, ikon, label) => h('button', { class: S.tab === id ? 'aktif' : '', 'aria-current': S.tab === id ? 'page' : null, type: 'button', onclick: () => { S.tab = id; if (id === 'riwayat') muatRiwayat(); else render(); } }, h('span', { class: 'ik', 'aria-hidden': 'true' }, ikon), label);
 
     return h('div', {},
         h('div', { class: `offline ${S.online ? 'hidden' : ''}`, id: 'banner-offline' }, 'Tidak ada koneksi internet. Absen membutuhkan koneksi.'),
@@ -348,7 +348,9 @@ function tutupSheet(paksa = false) {
 }
 
 function isiSheet(...nodes) {
-    if (sheet) sheet.isi.replaceChildren(...nodes.flat().filter(Boolean));
+    if (!sheet) return;
+    sheet.isi.replaceChildren(...nodes.flat().filter(Boolean));
+    sheet.judul.focus();
 }
 
 /** Satu penekanan Kirim: tombol dikunci selama proses; kunci tetap sama bila perlu kirim ulang. */

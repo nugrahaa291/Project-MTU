@@ -32,7 +32,7 @@
 <div class="min-h-screen lg:flex">
     {{-- SIDEBAR --}}
     <aside id="sidebar" class="hidden w-full shrink-0 bg-ink text-gray-300 lg:block lg:min-h-screen lg:w-64">
-        <div class="px-6 py-5 text-2xl font-bold text-white">{{ config('app.name') }}<span class="text-brand">.</span></div>
+        <div class="px-6 py-5 text-2xl font-bold text-white">MTU<span class="text-brand">.</span></div>
         <p class="px-6 pb-2 text-[11px] font-semibold tracking-widest text-gray-400 uppercase">Menu</p>
         <nav class="space-y-1 px-3 pb-6">
             @foreach ($menu as [$rute, $label, $pola])

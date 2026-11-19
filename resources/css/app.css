@@ -92,3 +92,4 @@
     .panel-header { position: sticky; top: 0; z-index: 41; flex-wrap: wrap; gap: .25rem; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0s !important; } }
+a.text-brand, .label .text-brand { color: var(--color-brand-dark); }

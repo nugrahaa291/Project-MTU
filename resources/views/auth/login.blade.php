@@ -12,7 +12,7 @@
 <body class="flex min-h-screen items-center justify-center bg-ink px-4">
     <div class="w-full max-w-sm">
         <a href="{{ route('lowongan.index') }}" class="mb-6 block text-center text-3xl font-bold text-white">
-            {{ config('app.name') }}<span class="text-brand">.</span>
+            MTU<span class="text-brand">.</span>
         </a>
 
         <div class="card p-6">
