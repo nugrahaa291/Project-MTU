@@ -15,9 +15,9 @@
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @foreach ($kartu as [$label, $angka, $url])
-            <a href="{{ $url }}" class="card block border-l-4 border-l-brand p-5 transition hover:shadow-md">
-                <p class="text-sm text-gray-500">{{ $label }}</p>
-                <p class="mt-1 text-3xl font-bold">{{ $angka }}</p>
+            <a href="{{ $url }}" class="card stat-link p-5 transition hover:shadow-md {{ $loop->last ? 'prioritas' : '' }}" >
+                <p class="text-sm font-medium">{{ $label }}</p>
+                <strong>{{ $angka }}</strong>
             </a>
         @endforeach
     </div>

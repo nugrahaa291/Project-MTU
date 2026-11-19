@@ -37,6 +37,7 @@
         <nav class="space-y-1 px-3 pb-6">
             @foreach ($menu as [$rute, $label, $pola])
                 <a href="{{ route($rute) }}"
+                   @if(request()->routeIs($pola)) aria-current="page" @endif
                    class="block rounded-md px-3 py-2 text-sm font-medium {{ request()->routeIs($pola) ? 'bg-brand text-white' : 'hover:bg-ink-soft hover:text-white' }}">
                     {{ $label }}
                     @if ($rute === 'hrd.izin.index' && $izinMenunggu > 0)
@@ -51,8 +52,8 @@
 
     {{-- KONTEN --}}
     <div class="min-w-0 flex-1">
-        <header class="flex items-center justify-between border-b border-line bg-white px-4 py-3 lg:px-8">
-            <button type="button" data-toggle-sidebar class="btn btn-outline btn-sm lg:hidden">&#9776; Menu</button>
+        <header class="panel-header flex items-center justify-between border-b border-line bg-white px-4 py-3 lg:px-8">
+            <button type="button" data-toggle-sidebar aria-controls="sidebar" aria-expanded="false" class="btn btn-outline btn-sm lg:hidden">&#9776; Menu</button>
             <h1 class="hidden text-lg font-bold lg:block">@yield('judul', 'Dashboard')</h1>
             <div class="flex items-center gap-3 text-sm">
                 <div class="text-right leading-tight">

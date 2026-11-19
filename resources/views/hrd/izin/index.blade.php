@@ -25,7 +25,7 @@
                 <p class="mt-3 rounded-md bg-gray-50 p-3 text-sm whitespace-pre-line">{{ $g->alasan }}</p>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
-                    <form method="POST" action="{{ route('hrd.izin.setujui', $g) }}" class="space-y-2" data-konfirmasi="Setujui izin ini dengan pengganti yang dipilih?">
+                    <form method="POST" action="{{ route('hrd.izin.setujui', $g) }}" class="space-y-2 rounded-lg border-l-4 border-green-700 bg-green-50 p-4" data-konfirmasi="Setujui izin {{ $g->karyawan->nama }} dengan pengganti yang dipilih?">
                         @csrf
                         <label class="label" for="pengganti-{{ $g->id }}">Karyawan pengganti (wajib)</label>
                         <select id="pengganti-{{ $g->id }}" name="pengganti_id" class="input" required>
@@ -36,10 +36,10 @@
                                 <option value="{{ $k->id }}" @disabled($izin)>{{ $k->nama }} ({{ $k->nip }}){{ $izin ? ' - sedang izin' : '' }}</option>
                             @endforeach
                         </select>
-                        <button class="btn w-full bg-green-600 text-white hover:bg-green-700">Setujui</button>
+                        <button class="btn w-full bg-green-700 text-white hover:bg-green-700">Setujui</button>
                     </form>
 
-                    <form method="POST" action="{{ route('hrd.izin.tolak', $g) }}" class="space-y-2" data-konfirmasi="Tolak pengajuan izin ini?">
+                    <form method="POST" action="{{ route('hrd.izin.tolak', $g) }}" class="space-y-2 rounded-lg border border-line p-4" data-konfirmasi="Tolak pengajuan izin {{ $g->karyawan->nama }}?">
                         @csrf
                         <label class="label" for="alasan-{{ $g->id }}">Alasan penolakan (wajib bila ditolak)</label>
                         <input id="alasan-{{ $g->id }}" name="alasan_penolakan" class="input" placeholder="Contoh: belum ada karyawan pengganti" maxlength="500">
