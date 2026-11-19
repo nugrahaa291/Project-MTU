@@ -4,18 +4,18 @@
 @section('content')
     @php
         $kartu = [
+            ['Izin menunggu keputusan', $statistik['izin_menunggu'], route('hrd.izin.index')],
             ['Lowongan dibuka', $statistik['lowongan_dibuka'], route('hrd.lowongan.index')],
             ['Lamaran baru', $statistik['lamaran_baru'], route('hrd.lamaran.index', ['status' => 'diajukan'])],
             ['Dalam seleksi', $statistik['lamaran_seleksi'], route('hrd.lamaran.index', ['status' => 'seleksi'])],
             ['Karyawan aktif', $statistik['karyawan_aktif'], route('hrd.karyawan.index')],
             ['Karyawan sudah absen hari ini', $statistik['absen_hari_ini'], route('hrd.kegiatan.index')],
-            ['Izin menunggu keputusan', $statistik['izin_menunggu'], route('hrd.izin.index')],
         ];
     @endphp
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @foreach ($kartu as [$label, $angka, $url])
-            <a href="{{ $url }}" class="card stat-link p-5 transition hover:shadow-md {{ $loop->last ? 'prioritas' : '' }}" >
+            <a href="{{ $url }}" class="card stat-link p-5 transition hover:shadow-md {{ $loop->first ? 'prioritas' : '' }}" >
                 <p class="text-sm font-medium">{{ $label }}</p>
                 <strong>{{ $angka }}</strong>
             </a>
