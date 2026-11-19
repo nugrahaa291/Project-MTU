@@ -8,8 +8,8 @@
 
         <form method="POST" action="{{ route('status.cek') }}" class="card space-y-4 p-6">
             @csrf
-            <x-field name="kode" label="Kode Lamaran" placeholder="LMR-XXXXXXXX" :value="request('kode')" required />
-            <x-field name="no_hp" label="Nomor HP" placeholder="081234567890" inputmode="tel" required />
+            <x-field name="kode" label="Kode Lamaran" autocomplete="off" spellcheck="false" placeholder="LMR-XXXXXXXX" :value="request('kode')" required />
+            <x-field name="no_hp" label="Nomor HP" placeholder="081234567890" inputmode="tel" autocomplete="tel" required />
             <button class="btn btn-primary w-full">Cek Status</button>
         </form>
 

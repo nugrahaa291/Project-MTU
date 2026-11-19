@@ -2,7 +2,7 @@
 @section('judul', $lowongan->judul)
 
 @section('content')
-    <section class="bg-ink text-white">
+    <section class="border-b-4 border-brand bg-ink text-white">
         <div class="mx-auto max-w-4xl px-4 py-12">
             <a href="{{ route('lowongan.index') }}" class="text-sm text-gray-300 hover:text-white">&larr; Semua lowongan</a>
             <h1 class="mt-3 text-3xl font-bold">{{ $lowongan->judul }}</h1>
@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <aside class="card h-fit space-y-3 p-6 text-sm">
+        <aside class="card h-fit md:sticky md:top-24 space-y-3 p-6 text-sm">
             <div class="flex items-center justify-between">
                 <span class="text-gray-500">Status</span>
                 <x-badge :warna="$lowongan->bisaDilamar() ? 'green' : 'red'">{{ $lowongan->labelStatus() }}</x-badge>

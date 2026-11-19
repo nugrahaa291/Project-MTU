@@ -12,13 +12,13 @@
 <body class="flex min-h-screen flex-col">
 
     <header class="sticky top-0 z-30 border-b border-line bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-2 px-4 py-2">
             <a href="{{ route('lowongan.index') }}" class="text-2xl font-bold text-ink">
                 {{ config('app.name') }}<span class="text-brand">.</span>
             </a>
-            <nav class="flex items-center gap-5 text-sm font-medium">
-                <a href="{{ route('lowongan.index') }}" class="hover:text-brand">Lowongan Kerja</a>
-                <a href="{{ route('status.form') }}" class="hover:text-brand">Cek Status</a>
+            <nav class="flex items-center gap-3 text-sm font-medium">
+                <a href="{{ route('lowongan.index') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Lowongan Kerja</a>
+                <a href="{{ route('status.form') }}" class="inline-flex min-h-11 items-center hover:text-brand-dark">Cek Status</a>
                 @auth
                     <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
                 @else
@@ -29,7 +29,7 @@
     </header>
 
     <main class="flex-1">
-        <div class="mx-auto max-w-6xl px-4 pt-6">
+        <div class="mx-auto max-w-6xl px-4 has-[*]:pt-6">
             <x-flash />
         </div>
         @yield('content')

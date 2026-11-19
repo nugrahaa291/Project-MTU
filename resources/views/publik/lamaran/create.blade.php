@@ -8,16 +8,25 @@
         <p class="mb-6 text-gray-600">{{ $lowongan->judul }} &middot; {{ $lowongan->jabatan->nama }}</p>
 
         @if ($errors->any())
-            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                Mohon periksa kembali isian Anda. Ada {{ $errors->count() }} kesalahan (ditandai merah di bawah).
+            <div role="alert" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                Mohon periksa kembali isian Anda. Ada {{ $errors->count() }} kesalahan.
+                <ul class="list-inside list-disc">
+                    @foreach ($errors->keys() as $kolom)
+                        <li><a class="underline" href="#{{ $kolom }}">{{ $errors->first($kolom) }}</a></li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
-        <form method="POST" action="{{ route('lamaran.store', $lowongan) }}" enctype="multipart/form-data" class="space-y-6">
+        <form data-lamaran method="POST" action="{{ route('lamaran.store', $lowongan) }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
+            <div class="card p-4" data-kemajuan hidden>
+                <label class="label" for="kemajuan">Kelengkapan isian wajib <span data-jumlah></span></label>
+                <progress id="kemajuan" class="w-full accent-brand-dark"></progress>
+            </div>
 
             <fieldset class="card space-y-4 p-6">
-                <legend class="px-1 text-base font-bold">Data Diri</legend>
+                <legend class="px-1 text-base font-bold">1. Data diri</legend>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
                     <x-field name="nama" label="Nama Lengkap" required />
@@ -41,7 +50,7 @@
             </fieldset>
 
             <fieldset class="card space-y-4 p-6">
-                <legend class="px-1 text-base font-bold">Berkas</legend>
+                <legend class="px-1 text-base font-bold">2. Berkas</legend>
                 <p class="text-sm text-gray-500">Berkas disimpan aman dan hanya dapat dilihat oleh HRD.</p>
                 <x-field name="cv" label="CV" type="file" accept=".pdf,.doc,.docx" hint="PDF/DOC/DOCX, maks. 3 MB." required />
                 <x-field name="pas_foto" label="Pas Foto" type="file" accept=".jpg,.jpeg,.png" hint="JPG/PNG, maks. 2 MB." required />

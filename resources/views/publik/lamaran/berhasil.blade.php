@@ -12,7 +12,9 @@
 
         <div class="card mt-6 p-6">
             <p class="text-sm text-gray-500">Kode lamaran Anda</p>
-            <p class="mt-1 font-mono text-3xl font-bold tracking-widest text-brand">{{ $lamaran->kode }}</p>
+            <p id="kode-lamaran" class="mt-1 break-all font-mono text-3xl font-bold tracking-wide text-brand-dark">{{ $lamaran->kode }}</p>
+            <button type="button" data-salin class="btn btn-outline">Salin kode</button>
+            <span role="status" data-status-salin></span>
             <p class="mt-3 text-sm text-gray-600">
                 <strong>Simpan kode ini.</strong> Bersama nomor HP yang Anda daftarkan, kode ini dipakai untuk mengecek status lamaran.
             </p>

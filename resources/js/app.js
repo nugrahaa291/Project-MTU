@@ -36,3 +36,44 @@ document.querySelectorAll('.table-wrap').forEach(wadah => {
         wadah.tabIndex = petunjuk.hidden ? -1 : 0;
     }).observe(wadah);
 });
+
+const lamaran = document.querySelector('[data-lamaran]');
+if (lamaran) {
+    const wajib = [...lamaran.querySelectorAll('[required]')];
+    const meter = lamaran.querySelector('progress');
+    meter.max = wajib.length;
+    const perbarui = () => {
+        meter.value = wajib.filter(kolom => kolom.value.trim() && kolom.validity.valid).length;
+        lamaran.querySelector('[data-jumlah]').textContent = `(${meter.value}/${meter.max})`;
+    };
+    lamaran.addEventListener('input', perbarui);
+    window.addEventListener('pageshow', perbarui);
+    perbarui();
+    lamaran.querySelector('[data-kemajuan]').hidden = false;
+    lamaran.querySelectorAll('input[type=file]').forEach(input => {
+        const info = document.createElement('p');
+        info.className = 'mt-1 min-h-5 break-all text-sm text-ink-soft';
+        info.setAttribute('role', 'status');
+        input.after(info);
+        input.addEventListener('change', () => {
+            const file = input.files[0];
+            info.textContent = file ? `${file.name} · ${Math.max(1, Math.ceil(file.size / 1024))} KB` : '';
+        });
+    });
+}
+
+document.querySelector('[data-salin]')?.addEventListener('click', async () => {
+    const kode = document.getElementById('kode-lamaran');
+    const status = document.querySelector('[data-status-salin]');
+    try {
+        await navigator.clipboard.writeText(kode.textContent.trim());
+        status.textContent = 'Kode tersalin.';
+    } catch {
+        const rentang = document.createRange();
+        rentang.selectNodeContents(kode);
+        const pilihan = window.getSelection();
+        pilihan.removeAllRanges();
+        pilihan.addRange(rentang);
+        status.textContent = 'Kode dipilih. Gunakan perintah Salin di perangkat Anda.';
+    }
+});
