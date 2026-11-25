@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Route;
 | FASE 1 - Portal publik (tanpa login)
 |--------------------------------------------------------------------------
 */
-Route::redirect('/', '/lowongan');
+Route::get('/', [Publik\ProfilController::class, 'beranda'])->name('beranda');
+Route::get('/tentang-kami', [Publik\ProfilController::class, 'tentang'])->name('tentang');
 
 Route::get('/lowongan', [Publik\LowonganController::class, 'index'])->name('lowongan.index');
 Route::get('/lowongan/{lowongan}', [Publik\LowonganController::class, 'show'])->name('lowongan.show');
