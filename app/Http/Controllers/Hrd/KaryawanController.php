@@ -23,7 +23,7 @@ class KaryawanController extends Controller
         $karyawan = Karyawan::with(['jabatan', 'user'])
             ->when($request->filled('q'), function ($q) use ($request) {
                 $kata = '%'.$request->q.'%';
-                $q->where(fn ($w) => $w->where('nama', 'like', $kata)->orWhere('nip', 'like', $kata)->orWhere('nik', 'like', $kata));
+                $q->where(fn ($w) => $w->where('nama', 'like', $kata)->orWhere('nip', 'like', $kata));
             })
             ->when($request->filled('aktif'), fn ($q) => $q->where('aktif', $request->boolean('aktif')))
             ->orderBy('nama')

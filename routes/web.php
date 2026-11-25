@@ -98,6 +98,7 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
             Route::post('jadwal-driver/store-import', [Admin\JadwalDriverController::class, 'storeImport'])->name('jadwal-driver.store-import');
             Route::get('jadwal-driver/download-invalid', [Admin\JadwalDriverController::class, 'downloadInvalidReport'])->name('jadwal-driver.download-invalid');
             Route::post('jadwal-driver/manual', [Admin\JadwalDriverController::class, 'storeManual'])->name('jadwal-driver.manual');
+            Route::put('jadwal-driver/{jadwal}', [Admin\JadwalDriverController::class, 'update'])->name('jadwal-driver.update');
             Route::post('jadwal-driver/{jadwal}/pengganti', [Admin\JadwalDriverController::class, 'tentukanPengganti'])->name('jadwal-driver.pengganti');
             Route::delete('jadwal-driver/{jadwal}', [Admin\JadwalDriverController::class, 'destroy'])->name('jadwal-driver.destroy');
 
@@ -145,12 +146,9 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
             */
             Route::get('absensi', [Hrd\AbsensiController::class, 'index'])->name('absensi.index');
             Route::get('absensi/rekap', [Hrd\AbsensiController::class, 'rekap'])->name('absensi.rekap');
-            Route::post('absensi', [Hrd\AbsensiController::class, 'store'])->name('absensi.store');
             Route::get('absensi/{absensi}/foto/{jenis}', [Hrd\AbsensiController::class, 'foto'])->name('absensi.foto');
 
             Route::get('kalender', [Hrd\KalenderKerjaController::class, 'index'])->name('kalender.index');
-            Route::post('kalender', [Hrd\KalenderKerjaController::class, 'store'])->name('kalender.store');
-            Route::delete('kalender/{kalender}', [Hrd\KalenderKerjaController::class, 'destroy'])->name('kalender.destroy');
         });
 
         /*

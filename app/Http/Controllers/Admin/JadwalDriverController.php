@@ -454,6 +454,57 @@ class JadwalDriverController extends Controller
     }
 
     /**
+     * Memperbarui tanggal libur (dan keterangan) pada jadwal driver yang sudah ditetapkan.
+     */
+    public function update(Request $request, JadwalDriver $jadwal): RedirectResponse
+    {
+        $data = $request->validate([
+            'tanggal' => ['required', 'date'],
+            'keterangan' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $tanggalLama = $jadwal->tanggal->toDateString();
+        $tanggalBaru = CarbonImmutable::parse($data['tanggal'])->toDateString();
+        $namaDriver = $jadwal->karyawan?->nama ?? 'Driver #'.$jadwal->karyawan_id;
+
+        if ($tanggalBaru !== $tanggalLama) {
+            $bentrok = JadwalDriver::where('karyawan_id', $jadwal->karyawan_id)
+                ->whereDate('tanggal', $tanggalBaru)
+                ->where('id', '!=', $jadwal->id)
+                ->exists();
+
+            if ($bentrok) {
+                return back()->withInput()->with('error', "Jadwal untuk {$namaDriver} pada tanggal {$tanggalBaru} sudah ada.");
+            }
+        }
+
+        $jadwal->update([
+            'tanggal' => $tanggalBaru,
+            'keterangan' => $data['keterangan'] ?? $jadwal->keterangan,
+        ]);
+
+        JadwalRiwayatPerubahan::create([
+            'jadwal_id' => $jadwal->id,
+            'karyawan_id' => $jadwal->karyawan_id,
+            'tanggal' => $tanggalBaru,
+            'status_sebelumnya' => $jadwal->status_jadwal,
+            'status_baru' => $jadwal->status_jadwal,
+            'driver_pengganti_sebelumnya' => $jadwal->driver_pengganti_id,
+            'driver_pengganti_baru' => $jadwal->driver_pengganti_id,
+            'diubah_oleh' => $request->user()->id,
+            'alasan' => "Tanggal libur diubah dari {$tanggalLama} menjadi {$tanggalBaru} oleh Admin",
+        ]);
+
+        ActivityLog::catat(
+            $request->user(),
+            'ubah_jadwal_driver',
+            "Mengubah tanggal libur {$namaDriver} dari {$tanggalLama} menjadi {$tanggalBaru}"
+        );
+
+        return back()->with('success', "Tanggal libur {$namaDriver} berhasil diperbarui menjadi {$tanggalBaru}.");
+    }
+
+    /**
      * Menghapus jadwal libur tertentu (mengembalikan ke hari kerja).
      */
     public function destroy(Request $request, JadwalDriver $jadwal): RedirectResponse

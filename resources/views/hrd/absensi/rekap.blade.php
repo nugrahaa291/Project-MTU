@@ -7,12 +7,9 @@
             <h2 class="text-xl font-bold text-gray-900">Rekapitulasi Absensi & Driver MTU</h2>
             <p class="text-sm text-gray-500">Pantau kehadiran, keterlambatan, hari kerja, dan jadwal libur driver secara terintegrasi.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div id="rekap-export-actions" class="flex flex-wrap items-center gap-2">
             <a href="{{ request()->fullUrlWithQuery(['export' => 'excel']) }}" class="btn btn-outline btn-sm">
                 &darr; Unduh Excel
-            </a>
-            <a href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}" class="btn btn-outline btn-sm">
-                &darr; Unduh CSV
             </a>
         </div>
     </div>
@@ -41,7 +38,7 @@
         </div>
 
         {{-- FORM FILTER UTAMA --}}
-        <form method="GET" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 items-end">
+        <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" data-ajax-sync="#rekap-export-actions,#rekap-info-periode" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 items-end">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Mulai</label>
                 <input type="date" name="dari" value="{{ $dari }}" class="input w-full text-xs">
@@ -82,19 +79,19 @@
             </div>
 
             <div class="sm:col-span-2 lg:col-span-6 flex items-center justify-between pt-2">
-                <div class="text-xs text-gray-500">
+                <div id="rekap-info-periode" class="text-xs text-gray-500">
                     Menampilkan periode: <strong>{{ \Carbon\Carbon::parse($dari)->translatedFormat('d M Y') }}</strong> s/d <strong>{{ \Carbon\Carbon::parse($sampai)->translatedFormat('d M Y') }}</strong>
                     ({{ count($baris) }} data ditemukan)
                 </div>
                 <div class="flex gap-2">
                     <a href="{{ url()->current() }}" class="btn btn-outline btn-sm">Reset Filter</a>
-                    <button type="submit" class="btn btn-dark btn-sm">Tampilkan</button>
                 </div>
             </div>
         </form>
     </div>
 
     {{-- TABEL HASIL REKAP --}}
+    <div id="ajax-results">
     <div class="table-wrap">
         <table class="table-base">
             <thead>
@@ -145,6 +142,7 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
     </div>
     <div class="mt-4 flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
         <p>&bull; <strong>Libur Terjadwal:</strong> Driver yang dijadwalkan libur kantor pusat tidak dihitung sebagai Alpa.</p>

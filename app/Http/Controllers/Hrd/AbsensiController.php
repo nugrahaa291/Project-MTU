@@ -297,9 +297,13 @@ class AbsensiController extends Controller
         ]);
     }
 
-    /** HRD mencatat izin/sakit/cuti/alpa secara manual. */
+    /** Admin mencatat izin/sakit/cuti/alpa secara manual. */
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. Hanya Admin yang dapat mengelola input izin/libur absensi.');
+        }
+
         $data = $request->validate([
             'karyawan_id' => ['required', Rule::exists('karyawan', 'id')->where('aktif', true)],
             'tanggal' => ['required', 'date'],

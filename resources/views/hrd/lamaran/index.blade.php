@@ -3,7 +3,7 @@
 
 @section('content')
     @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
-    <form method="GET" class="card mb-4 grid gap-3 p-4 sm:grid-cols-4">
+    <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" class="card mb-4 grid gap-3 p-4 sm:grid-cols-3">
         <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIK / kode" class="input">
         <select name="lowongan_id" class="input">
             <option value="">Semua lowongan</option>
@@ -17,9 +17,9 @@
                 <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
             @endforeach
         </select>
-        <button class="btn btn-dark">Filter</button>
     </form>
 
+    <div id="ajax-results">
     <div class="table-wrap">
         <table class="table-base">
             <thead><tr><th>Pelamar</th><th>Lowongan</th><th>Kode</th><th>Status</th><th>Masuk</th><th></th></tr></thead>
@@ -40,4 +40,5 @@
         </table>
     </div>
     <div class="mt-4">{{ $lamaran->links() }}</div>
+    </div>
 @endsection

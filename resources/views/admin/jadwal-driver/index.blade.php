@@ -137,7 +137,7 @@
 
     {{-- 2. PANEL FILTER PENCARIAN SEDERHANA (HANYA CARI & PROYEK) --}}
     <div class="card mb-6 p-4">
-        <form method="GET" action="{{ route('admin.jadwal-driver.index') }}" class="flex flex-wrap items-end gap-3">
+        <form method="GET" action="{{ route('admin.jadwal-driver.index') }}" data-ajax-filter data-ajax-target="#containerTabel" data-ajax-sync="#statusFilterBar" class="flex flex-wrap items-end gap-3">
             <input type="hidden" name="tahun" value="{{ $tahun }}">
             <input type="hidden" name="bulan" value="{{ $bulan }}">
             @if (!empty($tanggalPilihan))
@@ -161,9 +161,8 @@
                 </select>
             </div>
 
-            {{-- 3. Tombol Cari / Filter & Reset --}}
+            {{-- 3. Tombol Reset --}}
             <div class="flex items-center gap-2">
-                <button type="submit" class="btn btn-dark btn-sm">Cari / Filter</button>
                 <a href="{{ route('admin.jadwal-driver.index', ['tahun' => $tahun, 'bulan' => $bulan]) }}" class="btn btn-outline btn-sm">Reset</a>
             </div>
 
@@ -265,13 +264,12 @@
                             </td>
                             <td class="text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button type="button" onclick="bukaModalPengganti({{ $j->id }}, '{{ addslashes($j->karyawan?->nama ?? '') }}', '{{ $j->tanggal->format('Y-m-d') }}', '{{ $j->driver_pengganti_id }}')" class="btn btn-outline btn-sm text-[11px] py-1 px-2.5">
+                                    <button type="button" onclick="bukaModalPengganti({{ $j->id }}, '{{ addslashes($j->karyawan?->nama ?? '') }}', '{{ $j->tanggal->format('Y-m-d') }}', '{{ $j->driver_pengganti_id }}', {{ $j->karyawan_id }})" class="btn btn-outline btn-sm text-[11px] py-1 px-2.5">
                                         Pengganti
                                     </button>
-                                    <form method="POST" action="{{ route('admin.jadwal-driver.destroy', $j) }}" onsubmit="return confirm('Batalkan jadwal libur untuk {{ addslashes($j->karyawan?->nama ?? '') }} pada tanggal {{ $j->tanggal->format('d/m/Y') }}?')">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-danger btn-sm text-[11px] py-1 px-2.5">Batal</button>
-                                    </form>
+                                    <button type="button" onclick="bukaModalEditJadwal({{ $j->id }}, '{{ addslashes($j->karyawan?->nama ?? '') }}', '{{ $j->tanggal->format('Y-m-d') }}', '{{ addslashes($j->keterangan ?? '') }}')" class="btn btn-primary btn-sm text-[11px] py-1 px-2.5">
+                                        Edit
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -381,7 +379,7 @@
 
             <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1">Driver Pengganti (Jika Diperlukan)</label>
-                <select name="driver_pengganti_id" class="input w-full text-xs">
+                <select name="driver_pengganti_id" id="manual_driver_pengganti_id" class="input w-full text-xs">
                     <option value="">-- Tanpa Driver Pengganti --</option>
                     @foreach ($semuaDriver as $d)
                         <option value="{{ $d->id }}">{{ $d->nama }} ({{ $d->nip ?: $d->nik }}) &bull; Unit {{ $d->jabatan?->nama ?? $d->proyek }}</option>
@@ -430,6 +428,34 @@
             <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                 <button type="button" onclick="document.getElementById('modalTentukanPengganti').close()" class="btn btn-outline btn-sm">Batal</button>
                 <button type="submit" class="btn btn-primary btn-sm">Simpan Driver Pengganti</button>
+            </div>
+        </form>
+    </dialog>
+
+    {{-- MODAL EDIT TANGGAL LIBUR DRIVER --}}
+    <dialog id="modalEditJadwal" class="modal rounded-xl p-0 backdrop:bg-black/60 shadow-2xl max-w-md w-full">
+        <form method="POST" id="formEditJadwal" class="p-6 space-y-4">
+            @csrf
+            @method('PUT')
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 class="text-lg font-bold text-gray-900">Edit Tanggal Libur Driver</h3>
+                <button type="button" onclick="document.getElementById('modalEditJadwal').close()" class="btn btn-outline btn-sm">✕</button>
+            </div>
+
+            <div>
+                <p class="text-xs text-gray-600 mb-3">Driver: <strong id="editNamaDriver" class="text-gray-900">-</strong></p>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Libur Baru <span class="text-rose-500">*</span></label>
+                <input type="date" name="tanggal" id="editTanggalJadwal" required class="input w-full text-xs">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Keterangan (Opsional)</label>
+                <textarea name="keterangan" id="editKeteranganJadwal" rows="2" placeholder="Catatan perubahan tanggal libur..." class="input w-full text-xs"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onclick="document.getElementById('modalEditJadwal').close()" class="btn btn-outline btn-sm">Batal</button>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan Perubahan</button>
             </div>
         </form>
     </dialog>
@@ -498,6 +524,20 @@
             const nik = opt.dataset.nik || '-';
             const unit = opt.dataset.unit || opt.dataset.proyek || 'Operasional MTU';
 
+            // Sembunyikan driver yang sedang dipilih dari opsi driver pengganti
+            const selectPenggantiManual = document.getElementById('manual_driver_pengganti_id');
+            if (selectPenggantiManual) {
+                Array.from(selectPenggantiManual.options).forEach(o => {
+                    if (!o.value) return;
+                    const sama = String(o.value) === String(driverId);
+                    o.hidden = sama;
+                    o.disabled = sama;
+                });
+                if (String(selectPenggantiManual.value) === String(driverId)) {
+                    selectPenggantiManual.value = '';
+                }
+            }
+
             document.getElementById('infoNip').textContent = nip;
             document.getElementById('infoNik').textContent = nik;
             document.getElementById('infoProyek').textContent = unit;
@@ -555,14 +595,34 @@
             }
         }
 
-        function bukaModalPengganti(jadwalId, namaDriver, tanggal, penggantiId) {
+        function bukaModalPengganti(jadwalId, namaDriver, tanggal, penggantiId, karyawanId) {
             const modal = document.getElementById('modalTentukanPengganti');
             const form = document.getElementById('formPengganti');
+            const selectPengganti = document.getElementById('selectDriverPengganti');
             document.getElementById('namaDriverLibur').textContent = namaDriver;
             document.getElementById('tglDriverLibur').textContent = tanggal;
-            document.getElementById('selectDriverPengganti').value = penggantiId || '';
+
+            // Jangan tampilkan nama driver yang sedang libur di dropdown pengganti
+            Array.from(selectPengganti.options).forEach(o => {
+                if (!o.value) return;
+                const sama = String(o.value) === String(karyawanId);
+                o.hidden = sama;
+                o.disabled = sama;
+            });
+            selectPengganti.value = (penggantiId && String(penggantiId) !== String(karyawanId)) ? penggantiId : '';
 
             form.action = `/admin/jadwal-driver/${jadwalId}/pengganti`;
+            modal.showModal();
+        }
+
+        function bukaModalEditJadwal(jadwalId, namaDriver, tanggal, keterangan) {
+            const modal = document.getElementById('modalEditJadwal');
+            const form = document.getElementById('formEditJadwal');
+            document.getElementById('editNamaDriver').textContent = namaDriver;
+            document.getElementById('editTanggalJadwal').value = tanggal;
+            document.getElementById('editKeteranganJadwal').value = keterangan || '';
+
+            form.action = `/admin/jadwal-driver/${jadwalId}`;
             modal.showModal();
         }
 

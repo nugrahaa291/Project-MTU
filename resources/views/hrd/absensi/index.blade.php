@@ -2,7 +2,8 @@
 @section('judul', 'Absensi')
 
 @section('content')
-    <form method="GET" class="card mb-4 grid gap-3 p-4 sm:grid-cols-5">
+    @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
+    <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" class="card mb-4 grid gap-3 p-4 sm:grid-cols-4">
         <input type="date" name="dari" value="{{ $dari }}" class="input">
         <input type="date" name="sampai" value="{{ $sampai }}" class="input">
         <select name="karyawan_id" class="input">
@@ -17,9 +18,9 @@
                 <option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>
             @endforeach
         </select>
-        <button class="btn btn-dark">Tampilkan</button>
     </form>
 
+    <div id="ajax-results">
     <div class="table-wrap">
         <table class="table-base">
             <thead><tr><th>Tanggal</th><th>Karyawan</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Jarak</th><th>Foto</th></tr></thead>
@@ -38,8 +39,8 @@
                             @if ($a->jarak_pulang !== null)<br>P: {{ $a->jarak_pulang }} m @endif
                         </td>
                         <td class="space-x-2 whitespace-nowrap text-xs font-semibold">
-                            @if ($a->foto_masuk)<a class="text-brand" target="_blank" href="{{ route('hrd.absensi.foto', [$a, 'masuk']) }}">Masuk</a>@endif
-                            @if ($a->foto_pulang)<a class="text-brand" target="_blank" href="{{ route('hrd.absensi.foto', [$a, 'pulang']) }}">Pulang</a>@endif
+                            @if ($a->foto_masuk)<a class="text-brand" target="_blank" href="{{ route($rute.'.absensi.foto', [$a, 'masuk']) }}">Masuk</a>@endif
+                            @if ($a->foto_pulang)<a class="text-brand" target="_blank" href="{{ route($rute.'.absensi.foto', [$a, 'pulang']) }}">Pulang</a>@endif
                         </td>
                     </tr>
                 @empty
@@ -49,19 +50,22 @@
         </table>
     </div>
     <div class="mt-4">{{ $absensi->links() }}</div>
+    </div>
 
-    <h2 class="mt-8 mb-3 text-lg font-bold">Catat Izin / Sakit / Cuti / Alpa</h2>
-    <form method="POST" action="{{ route('hrd.absensi.store') }}" class="card grid max-w-4xl gap-4 p-5 sm:grid-cols-4">
-        @csrf
-        <x-field name="karyawan_id" label="Karyawan" as="select" required>
-            <option value="">Pilih...</option>
-            @foreach ($karyawan as $k)<option value="{{ $k->id }}" @selected(old('karyawan_id') == $k->id)>{{ $k->nama }}</option>@endforeach
-        </x-field>
-        <x-field name="tanggal" label="Tanggal" type="date" :value="$hariIni" required />
-        <x-field name="status" label="Status" as="select" required>
-            @foreach (\App\Enums\StatusAbsensi::manual() as $s)<option value="{{ $s->value }}" @selected(old('status') === $s->value)>{{ $s->label() }}</option>@endforeach
-        </x-field>
-        <x-field name="keterangan" label="Keterangan" />
-        <div class="sm:col-span-4"><button class="btn btn-primary">Simpan Catatan</button></div>
-    </form>
+    @if (auth()->user()?->isAdmin())
+        <h2 class="mt-8 mb-3 text-lg font-bold">Catat Izin / Sakit / Cuti / Alpa</h2>
+        <form method="POST" action="{{ route('admin.absensi.store') }}" class="card grid max-w-4xl gap-4 p-5 sm:grid-cols-4">
+            @csrf
+            <x-field name="karyawan_id" label="Karyawan" as="select" required>
+                <option value="">Pilih...</option>
+                @foreach ($karyawan as $k)<option value="{{ $k->id }}" @selected(old('karyawan_id') == $k->id)>{{ $k->nama }}</option>@endforeach
+            </x-field>
+            <x-field name="tanggal" label="Tanggal" type="date" :value="$hariIni" required />
+            <x-field name="status" label="Status" as="select" required>
+                @foreach (\App\Enums\StatusAbsensi::manual() as $s)<option value="{{ $s->value }}" @selected(old('status') === $s->value)>{{ $s->label() }}</option>@endforeach
+            </x-field>
+            <x-field name="keterangan" label="Keterangan" />
+            <div class="sm:col-span-4"><button class="btn btn-primary">Simpan Catatan</button></div>
+        </form>
+    @endif
 @endsection

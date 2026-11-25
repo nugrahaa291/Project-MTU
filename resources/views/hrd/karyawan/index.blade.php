@@ -4,20 +4,20 @@
 @section('content')
     @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <form method="GET" class="flex gap-2">
-            <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIP / NIK" class="input w-64">
+        <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" class="flex flex-wrap items-center gap-2">
+            <input name="q" value="{{ request('q') }}" placeholder="Cari nama / NIP" class="input w-64">
             <select name="aktif" class="input w-36">
                 <option value="">Semua</option>
                 <option value="1" @selected(request('aktif') === '1')>Aktif</option>
                 <option value="0" @selected(request('aktif') === '0')>Nonaktif</option>
             </select>
-            <button class="btn btn-dark">Cari</button>
         </form>
         @if (auth()->user()?->isAdmin())
             <a href="{{ route($rute.'.karyawan.create') }}" class="btn btn-primary">+ Tambah Karyawan</a>
         @endif
     </div>
 
+    <div id="ajax-results">
     <div class="table-wrap">
         <table class="table-base">
             <thead><tr><th>NIP</th><th>Nama</th><th>Unit</th><th>Tgl Masuk</th><th>Status</th><th></th></tr></thead>
@@ -38,4 +38,5 @@
         </table>
     </div>
     <div class="mt-4">{{ $karyawan->links() }}</div>
+    </div>
 @endsection

@@ -23,6 +23,10 @@ class KalenderKerjaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. Hanya Admin yang dapat mengelola hari libur.');
+        }
+
         $data = $request->validate([
             'tanggal' => ['required', 'date', Rule::unique('kalender_kerja', 'tanggal')],
             'nama' => ['required', 'string', 'max:100'],
@@ -33,8 +37,12 @@ class KalenderKerjaController extends Controller
         return back()->with('success', 'Hari libur ditambahkan.');
     }
 
-    public function destroy(KalenderKerja $kalender): RedirectResponse
+    public function destroy(Request $request, KalenderKerja $kalender): RedirectResponse
     {
+        if (! $request->user()?->isAdmin()) {
+            abort(403, 'Akses ditolak. Hanya Admin yang dapat mengelola hari libur.');
+        }
+
         $kalender->delete();
 
         return back()->with('success', 'Hari libur dihapus.');

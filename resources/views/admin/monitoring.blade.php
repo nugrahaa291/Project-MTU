@@ -72,7 +72,7 @@
                 <h3 class="text-lg font-bold text-gray-900">Audit Log Aktivitas Riil</h3>
                 <p class="text-xs text-gray-500">Semua aksi administratif dan otentikasi tercatat di sini secara transparan.</p>
             </div>
-            <form method="GET" class="flex gap-2">
+            <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" class="flex gap-2">
                 <select name="aksi" class="input w-48">
                     <option value="">Semua Aksi</option>
                     <option value="login" @selected(request('aksi') === 'login')>Login Web</option>
@@ -86,13 +86,13 @@
                     <option value="ganti_password" @selected(request('aksi') === 'ganti_password')>Ganti Password Sendiri</option>
                     <option value="ubah_pengaturan" @selected(request('aksi') === 'ubah_pengaturan')>Ubah Pengaturan</option>
                 </select>
-                <button class="btn btn-dark">Filter</button>
                 @if (request('aksi'))
                     <a href="{{ route('admin.monitoring') }}" class="btn btn-outline">Reset</a>
                 @endif
             </form>
         </div>
 
+        <div id="ajax-results">
         <div class="table-wrap">
             <table class="table-base">
                 <thead>
@@ -150,5 +150,6 @@
         </div>
 
         <div class="mt-4">{{ $logs->links() }}</div>
+        </div>
     </div>
 @endsection

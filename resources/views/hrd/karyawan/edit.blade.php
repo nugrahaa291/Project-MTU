@@ -21,7 +21,9 @@
         <x-field name="alamat" label="Alamat" as="textarea" rows="3" :value="$karyawan->alamat" />
 
         <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="aktif" value="1" @checked(old('aktif', $karyawan->aktif)) class="rounded border-gray-300 text-brand focus:ring-brand">
+            <input type="checkbox" name="aktif" value="1" @checked(old('aktif', $karyawan->aktif))
+                   data-confirm-uncheck="Apakah Anda yakin ingin menonaktifkan karyawan ini? Karyawan tidak akan bisa login ke web maupun menggunakan aplikasi absensi mobile."
+                   class="rounded border-gray-300 text-brand focus:ring-brand">
             Karyawan aktif <span class="text-gray-500">(menonaktifkan akan memutus login web &amp; aplikasi mobile)</span>
         </label>
 

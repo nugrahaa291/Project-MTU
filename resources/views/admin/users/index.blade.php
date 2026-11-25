@@ -11,7 +11,7 @@
     @endif
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <form method="GET" class="flex flex-wrap items-center gap-2">
+        <form method="GET" data-ajax-filter data-ajax-target="#ajax-results" class="flex flex-wrap items-center gap-2">
             <input name="q" value="{{ request('q') }}" placeholder="Cari nama atau email..." class="input w-64">
             <select name="role" class="input w-40">
                 <option value="">Semua Peran</option>
@@ -24,7 +24,6 @@
                 <option value="1" @selected(request('status') === '1')>Aktif</option>
                 <option value="0" @selected(request('status') === '0')>Nonaktif</option>
             </select>
-            <button class="btn btn-dark">Cari</button>
             @if (request()->hasAny(['q', 'role', 'status']))
                 <a href="{{ route('admin.users.index') }}" class="btn btn-outline">Reset</a>
             @endif
@@ -32,6 +31,7 @@
         <a href="{{ route('admin.users.create') }}" class="btn btn-primary">+ Tambah Pengguna</a>
     </div>
 
+    <div id="ajax-results">
     <div class="table-wrap">
         <table class="table-base">
             <thead>
@@ -112,4 +112,5 @@
     </div>
 
     <div class="mt-4">{{ $users->links() }}</div>
+    </div>
 @endsection

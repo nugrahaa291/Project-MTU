@@ -24,6 +24,20 @@ class LamaranController extends Controller
     public function index(Request $request): View
     {
         $lamaran = Lamaran::with('lowongan')
+            ->where(function ($q) {
+                $q->where('status', '!=', StatusLamaran::Diterima->value)
+                    ->orWhere(function ($sub) {
+                        $sub->where('status', StatusLamaran::Diterima->value)
+                            ->where(function ($tgl) {
+                                $batas = now()->subDays(3);
+                                $tgl->where('diputuskan_pada', '>=', $batas)
+                                    ->orWhere(function ($fallback) use ($batas) {
+                                        $fallback->whereNull('diputuskan_pada')
+                                            ->where('updated_at', '>=', $batas);
+                                    });
+                            });
+                    });
+            })
             ->when($request->filled('lowongan_id'), fn ($q) => $q->where('lowongan_id', $request->lowongan_id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('q'), function ($q) use ($request) {
