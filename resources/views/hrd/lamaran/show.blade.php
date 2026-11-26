@@ -40,7 +40,7 @@
             <div class="card p-6">
                 <h3 class="mb-3 font-bold">Berkas</h3>
                 <div class="flex flex-wrap gap-2">
-                    @foreach (\App\Models\Lamaran::DOKUMEN as $kolom => $label)
+                    @foreach ($lamaran->berkasTampil() as $kolom => $label)
                         @if ($lamaran->{$kolom})
                             <a href="{{ route($rute.'.lamaran.dokumen', [$lamaran, $kolom]) }}" target="_blank" class="btn btn-outline btn-sm">{{ $label }} &nearr;</a>
                         @else

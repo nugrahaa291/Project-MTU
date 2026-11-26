@@ -90,8 +90,14 @@ class LowonganController extends Controller
         // Kuota tidak boleh lebih kecil dari jumlah yang sudah diterima
         $kuotaMin = $lowongan ? max(1, $lowongan->jumlahDiterima()) : 1;
 
-        return $request->validate([
-            'judul' => ['required', 'string', 'max:150'],
+        // Unit yang boleh dipilih. Lowongan lama (judul bukan unit) boleh mempertahankan judulnya.
+        $unit = array_keys(config('dokumen_lamaran.unit'));
+        if ($lowongan) {
+            $unit[] = $lowongan->judul;
+        }
+
+        $data = $request->validate([
+            'judul' => ['required', Rule::in($unit)],
             'jabatan_id' => ['required', 'exists:jabatan,id'],
             'lokasi' => ['required', 'string', 'max:100'],
             'kuota' => ['required', 'integer', "min:{$kuotaMin}", 'max:500'],
@@ -101,7 +107,17 @@ class LowonganController extends Controller
             'deskripsi' => ['nullable', 'string', 'max:5000'],
             'persyaratan' => ['nullable', 'string', 'max:5000'],
         ], [
+            'judul.required' => 'Pilih unit terlebih dahulu.',
+            'judul.in' => 'Unit tidak valid. Pilih salah satu unit yang tersedia.',
             'kuota.min' => 'Kuota tidak boleh kurang dari jumlah pelamar yang sudah diterima.',
         ]);
+
+        // Paket dokumen mengikuti unit. Judul lama (bukan unit) tidak mengubah paketnya.
+        $paket = config("dokumen_lamaran.unit.{$data['judul']}");
+        if ($paket) {
+            $data['paket_dokumen'] = $paket;
+        }
+
+        return $data;
     }
 }
