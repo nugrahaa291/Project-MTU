@@ -17,7 +17,7 @@
 
         <div class="card p-6">
             <h1 class="mb-1 text-lg font-bold">Masuk</h1>
-            <p class="mb-5 text-sm text-gray-500">Khusus HRD dan karyawan.</p>
+            <p class="mb-5 text-sm text-gray-500">Untuk Admin dan HRD. Karyawan masuk lewat <a class="font-semibold text-brand" href="{{ route('pwa') }}">halaman Absen</a> dengan NIP dan PIN.</p>
 
             <form method="POST" action="{{ route('login') }}" class="space-y-4">
                 @csrf

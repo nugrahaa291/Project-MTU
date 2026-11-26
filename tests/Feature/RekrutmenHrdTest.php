@@ -50,7 +50,7 @@ class RekrutmenHrdTest extends TestCase
         ]);
 
         $karyawan = Karyawan::with('user')->firstOrFail();
-        $response->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('password_sementara');
+        $response->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('pin_sementara');
 
         $this->assertSame(StatusLamaran::Diterima, $lamaran->fresh()->status);
         $this->assertSame($lamaran->id, $karyawan->lamaran_id);
@@ -65,8 +65,10 @@ class RekrutmenHrdTest extends TestCase
         $this->assertTrue($user->must_change_password);
         $this->assertSame('dewi@example.com', $user->email);
 
-        // Password sementara benar-benar bisa dipakai login dan tidak tersimpan polos di database
-        $password = session('password_sementara');
+        // PIN sementara benar-benar cocok dengan hash dan tidak tersimpan polos di database
+        $password = session('pin_sementara');
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $password);              // PIN sementara 6 digit
+        $this->assertTrue(\App\Support\Pin::valid($password));
         $this->assertTrue(Hash::check($password, $user->password));
         $this->assertNotSame($password, $user->getRawOriginal('password'));
     }

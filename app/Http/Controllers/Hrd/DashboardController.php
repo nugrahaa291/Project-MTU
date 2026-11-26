@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Hrd;
 use App\Enums\StatusLamaran;
 use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
+use App\Models\KegiatanAbsensi;
 use App\Models\Lamaran;
 use App\Models\Lowongan;
 use Illuminate\View\View;
@@ -18,6 +19,8 @@ class DashboardController extends Controller
             'lamaran_baru' => Lamaran::where('status', StatusLamaran::Diajukan->value)->count(),
             'lamaran_seleksi' => Lamaran::where('status', StatusLamaran::Seleksi->value)->count(),
             'karyawan_aktif' => Karyawan::aktif()->count(),
+            'absen_hari_ini' => KegiatanAbsensi::whereDate('tanggal', now(config('absensi.timezone'))->toDateString())->distinct('karyawan_id')->count('karyawan_id'),
+            'izin_menunggu' => KegiatanAbsensi::izinMenunggu()->count(),
         ];
 
         $lamaranTerbaru = Lamaran::with('lowongan')

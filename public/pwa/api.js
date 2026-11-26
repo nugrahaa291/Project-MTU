@@ -46,13 +46,15 @@ export function buatApi({ fetchFn = (...a) => fetch(...a), ambilToken, saatTidak
     }
 
     return {
-        login: (email, password, deviceName) => minta('POST', '/login', { json: { email, password, device_name: deviceName } }),
+        // Karyawan login dengan NIP + PIN
+        login: (nip, pin, deviceName) => minta('POST', '/login', { json: { nip, pin, device_name: deviceName } }),
         logout: () => minta('POST', '/logout'),
         me: () => minta('GET', '/me'),
-        gantiPassword: (payload) => minta('PUT', '/password', { json: payload }),
-        hariIni: () => minta('GET', '/absensi/hari-ini'),
-        masuk: (form) => minta('POST', '/absensi/masuk', { form }),
-        pulang: (form) => minta('POST', '/absensi/pulang', { form }),
-        riwayat: (bulan) => minta('GET', `/absensi?bulan=${encodeURIComponent(bulan)}`),
+        gantiPin: (payload) => minta('PUT', '/pin', { json: payload }),
+        ringkasan: () => minta('GET', '/aktivitas/ringkasan'),
+        standby: (kunci) => minta('POST', '/aktivitas/standby', { json: { kunci } }),
+        order: (form) => minta('POST', '/aktivitas/order', { form }),
+        izin: (form) => minta('POST', '/aktivitas/izin', { form }),
+        riwayat: (bulan) => minta('GET', `/aktivitas?bulan=${encodeURIComponent(bulan)}`),
     };
 }

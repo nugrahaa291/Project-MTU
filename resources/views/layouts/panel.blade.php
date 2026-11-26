@@ -26,6 +26,8 @@
     ];
     $menuHrd = [
         ['hrd.dashboard', 'Dashboard', 'hrd.dashboard'],
+        ['hrd.kegiatan.index', 'Aktivitas Absensi', 'hrd.kegiatan.*'],
+        ['hrd.izin.index', 'Pengajuan Izin', 'hrd.izin.*'],
         ['hrd.lowongan.index', 'Lowongan', 'hrd.lowongan.*'],
         ['hrd.lamaran.index', 'Lamaran Masuk', 'hrd.lamaran.*'],
         ['hrd.karyawan.index', 'Karyawan', 'hrd.karyawan.*'],

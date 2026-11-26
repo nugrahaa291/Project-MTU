@@ -74,7 +74,7 @@ class AdminTest extends TestCase
             'no_hp' => '081299990001',
             'jabatan_id' => $jabatan->id,
             'tanggal_masuk' => '2026-11-01',
-        ])->assertSessionHas('password_sementara');
+        ])->assertSessionHas('pin_sementara');
 
         // 5. Admin bisa akses Absensi, Kalender, Jabatan
         $this->actingAs($admin)->get(route('admin.absensi.index'))->assertOk();

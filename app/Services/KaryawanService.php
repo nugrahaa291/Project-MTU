@@ -7,6 +7,7 @@ use App\Exceptions\RekrutmenException;
 use App\Models\Karyawan;
 use App\Models\Lamaran;
 use App\Models\User;
+use App\Support\Pin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,8 +17,8 @@ class KaryawanService
      * Membuat akun login (User) + data Karyawan sekaligus.
      * Dibungkus transaksi: kalau salah satu gagal, dua-duanya dibatalkan.
      *
-     * @param  array{nama:string,email:string,nik:string,no_hp:string,alamat?:?string,jabatan_id:int,tanggal_masuk:string,lamaran_id?:?int}  $data
-     * @return array{0: Karyawan, 1: string}  [karyawan, passwordSementara]
+     * @param  array{nama:string,email:string,nik:string,no_hp:string,alamat?:?string,jabatan_id:int,tanggal_masuk:string,lamaran_id?:?int,nip?:?string}  $data
+     * @return array{0: Karyawan, 1: string}  [karyawan, pinSementara]
      */
     public function buat(array $data): array
     {
@@ -25,8 +26,14 @@ class KaryawanService
             throw new RekrutmenException('NIK '.$data['nik'].' sudah terdaftar sebagai karyawan.');
         }
 
-        return DB::transaction(function () use ($data) {
-            $passwordSementara = self::passwordSementara();
+        $nipManual = isset($data['nip']) ? trim((string) $data['nip']) : '';
+        if ($nipManual !== '' && Karyawan::where('nip', $nipManual)->exists()) {
+            throw new RekrutmenException('NIP '.$nipManual.' sudah dipakai karyawan lain.');
+        }
+
+        return DB::transaction(function () use ($data, $nipManual) {
+            // Karyawan login dengan NIP + PIN. PIN sementara 6 digit; wajib diganti saat login pertama.
+            $passwordSementara = Pin::acak();
 
             $user = new User([
                 'name' => $data['nama'],
@@ -52,9 +59,10 @@ class KaryawanService
                 'aktif' => true,
             ]);
 
-            // NIP = tahun+bulan masuk + nomor urut dari id, contoh: 26100007
+            // NIP yang diisi HRD dipakai apa adanya; bila kosong dibuat otomatis (tahun+bulan+nomor urut)
             $karyawan->update([
-                'nip' => now()->format('ym').str_pad((string) $karyawan->id, 4, '0', STR_PAD_LEFT),
+                'nip' => $nipManual !== '' ? $nipManual
+                    : now()->format('ym').str_pad((string) $karyawan->id, 4, '0', STR_PAD_LEFT),
             ]);
 
             return [$karyawan, $passwordSementara];
@@ -78,10 +86,10 @@ class KaryawanService
         ]);
     }
 
-    /** Membuat password sementara baru (misalnya karyawan lupa password). */
+    /** Membuat PIN sementara baru (misalnya karyawan lupa PIN). */
     public function resetPassword(Karyawan $karyawan): string
     {
-        $password = self::passwordSementara();
+        $password = Pin::acak();
 
         $user = $karyawan->user;
         $user->password = $password;

@@ -16,6 +16,6 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->route($user->isHrd() ? 'hrd.dashboard' : 'karyawan.beranda');
+        return redirect()->route($user->isHrd() ? 'hrd.dashboard' : 'pwa');
     }
 }

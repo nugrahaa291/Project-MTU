@@ -78,7 +78,7 @@
                 <form method="POST" action="{{ route($rute.'.lamaran.terima', $lamaran) }}" class="card space-y-3 border-green-200 p-5" data-konfirmasi="Terima pelamar ini dan buat akun karyawan?">
                     @csrf
                     <h3 class="font-bold text-green-700">Terima (Hired)</h3>
-                    <p class="text-xs text-gray-500">Sistem otomatis membuat akun karyawan dengan password sementara.</p>
+                    <p class="text-xs text-gray-500">Sistem otomatis membuat akun karyawan dengan PIN sementara.</p>
                     <x-field name="email" label="Email akun" type="email" :value="$lamaran->email" required />
                     <x-field name="tanggal_masuk" label="Tanggal masuk kerja" type="date" :value="now()->toDateString()" required />
                     <x-field name="catatan" label="Catatan (opsional)" as="textarea" rows="2" />

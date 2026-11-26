@@ -91,7 +91,7 @@ class AbsensiController extends Controller
         $awal = CarbonImmutable::createFromFormat('Y-m-d', $bulan.'-01')->startOfMonth();
 
         $data = Absensi::where('karyawan_id', $request->user()->karyawan->id)
-            ->whereBetween('tanggal', [$awal->toDateString(), $awal->endOfMonth()->toDateString()])
+            ->whereDate('tanggal', '>=', $awal->toDateString())->whereDate('tanggal', '<=', $awal->endOfMonth()->toDateString())
             ->orderByDesc('tanggal')
             ->get();
 

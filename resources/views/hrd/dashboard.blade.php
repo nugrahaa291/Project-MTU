@@ -7,6 +7,8 @@
             ['Lowongan dibuka', $statistik['lowongan_dibuka'], route('hrd.lowongan.index')],
             ['Lamaran baru', $statistik['lamaran_baru'], route('hrd.lamaran.index', ['status' => 'diajukan'])],
             ['Dalam seleksi', $statistik['lamaran_seleksi'], route('hrd.lamaran.index', ['status' => 'seleksi'])],
+            ['Karyawan absen hari ini', $statistik['absen_hari_ini'], route('hrd.kegiatan.index')],
+            ['Izin menunggu keputusan', $statistik['izin_menunggu'], route('hrd.izin.index')],
             ['Karyawan terdaftar', $statistik['karyawan_aktif'], route('hrd.karyawan.index')],
         ];
     @endphp

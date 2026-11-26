@@ -10,8 +10,9 @@
         </p>
         <div class="grid gap-4 sm:grid-cols-2">
             <x-field name="nama" label="Nama Lengkap" required />
-            <x-field name="email" label="Email (untuk login)" type="email" required />
+            <x-field name="email" label="Email" type="email" required />
             <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
+            <x-field name="nip" label="NIP (opsional)" hint="Dipakai untuk login karyawan. Kosongkan agar dibuat otomatis." />
             <x-field name="no_hp" label="Nomor HP" required />
             <x-field name="jabatan_id" label="Unit / Penugasan Armada" as="select" required>
                 <option value="">Pilih Unit...</option>
