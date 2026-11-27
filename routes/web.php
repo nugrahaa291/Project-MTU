@@ -20,10 +20,24 @@ Route::get('/tentang-kami', [Publik\ProfilController::class, 'tentang'])->name('
 
 Route::get('/lowongan', [Publik\LowonganController::class, 'index'])->name('lowongan.index');
 Route::get('/lowongan/{lowongan}', [Publik\LowonganController::class, 'show'])->name('lowongan.show');
-Route::get('/lowongan/{lowongan}/lamar', [Publik\LamaranController::class, 'create'])->name('lamaran.create');
-Route::post('/lowongan/{lowongan}/lamar', [Publik\LamaranController::class, 'store'])
-    ->middleware('throttle:10,1')->name('lamaran.store');
-Route::get('/lamaran/berhasil/{lamaran:kode}', [Publik\LamaranController::class, 'berhasil'])->name('lamaran.berhasil');
+Route::prefix('pelamar')->name('pelamar.')->group(function () {
+    Route::get('masuk', [Publik\AkunPelamarController::class, 'form'])->name('login');
+    Route::post('masuk', [Publik\AkunPelamarController::class, 'masuk'])->middleware('throttle:10,1');
+    Route::get('daftar', [Publik\AkunPelamarController::class, 'form'])->name('daftar');
+    Route::post('daftar', [Publik\AkunPelamarController::class, 'daftar'])->middleware('throttle:5,1');
+    Route::get('google', [Publik\GooglePelamarController::class, 'mulai'])->middleware('throttle:20,1')->name('google');
+    Route::get('google/callback', [Publik\GooglePelamarController::class, 'callback'])->name('google.callback');
+});
+
+Route::middleware(\App\Http\Middleware\RequirePelamar::class)->group(function () {
+    Route::get('/pelamar/lamaran', [Publik\AkunPelamarController::class, 'riwayat'])->name('pelamar.riwayat');
+    Route::post('/pelamar/lamaran/tautkan', [Publik\AkunPelamarController::class, 'tautkanLamaran'])->middleware('throttle:5,1')->name('pelamar.tautkan');
+    Route::post('/pelamar/keluar', [Publik\AkunPelamarController::class, 'keluar'])->name('pelamar.keluar');
+    Route::get('/lowongan/{lowongan}/lamar', [Publik\LamaranController::class, 'create'])->name('lamaran.create');
+    Route::post('/lowongan/{lowongan}/lamar', [Publik\LamaranController::class, 'store'])
+        ->middleware('throttle:10,1')->name('lamaran.store');
+    Route::get('/lamaran/berhasil/{lamaran:kode}', [Publik\LamaranController::class, 'berhasil'])->name('lamaran.berhasil');
+});
 
 Route::get('/cek-status', [Publik\StatusLamaranController::class, 'form'])->name('status.form');
 Route::post('/cek-status', [Publik\StatusLamaranController::class, 'cek'])

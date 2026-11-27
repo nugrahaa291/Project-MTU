@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Table('lamaran')]
 #[Fillable([
-    'kode', 'lowongan_id', 'nik', 'nama', 'email', 'no_hp', 'jenis_kelamin', 'tempat_lahir',
+    'kode', 'lowongan_id', 'pelamar_id', 'nik', 'nama', 'email', 'no_hp', 'jenis_kelamin', 'tempat_lahir',
     'tanggal_lahir', 'alamat', 'pendidikan',
     'cv', 'pas_foto', 'ktp', 'sim', 'kk', 'skck', 'domisili', 'paklaring',
     'ijazah', 'akte_lahir', 'buku_nikah', 'surat_lamaran',

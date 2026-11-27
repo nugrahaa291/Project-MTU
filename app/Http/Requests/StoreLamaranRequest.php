@@ -10,7 +10,7 @@ class StoreLamaranRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // portal publik
+        return $this->user('pelamar') !== null;
     }
 
     /** Bersihkan spasi/strip di NIK & nomor HP sebelum divalidasi. */

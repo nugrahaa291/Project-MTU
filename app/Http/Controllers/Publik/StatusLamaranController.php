@@ -25,6 +25,12 @@ class StatusLamaranController extends Controller
         // Wajib kode DAN nomor HP yang cocok: nama saja tidak cukup, supaya
         // orang lain tidak bisa mengintip status lamaran orang lain.
         $lamaran = Lamaran::with('lowongan')
+            ->where(function ($query) use ($request) {
+                $query->whereNull('pelamar_id');
+                if ($pelamar = $request->user('pelamar')) {
+                    $query->orWhere('pelamar_id', $pelamar->id);
+                }
+            })
             ->where('kode', strtoupper(trim($data['kode'])))
             ->where('no_hp', Lamaran::normalisasiHp($data['no_hp']))
             ->first();

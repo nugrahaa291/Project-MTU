@@ -16,6 +16,9 @@
             ['tentang', 'Tentang Kami', 'tentang'],
             ['lowongan.index', 'Lowongan Kerja', 'lowongan.*|lamaran.*'],
             ['status.form', 'Cek Status', 'status.*'],
+            auth('pelamar')->check()
+                ? ['pelamar.riwayat', 'Lamaran Saya', 'pelamar.riwayat']
+                : ['pelamar.login', 'Masuk Pelamar', 'pelamar.*'],
         ];
     @endphp
 
@@ -26,7 +29,7 @@
             </a>
 
             {{-- Navigasi layar lebar --}}
-            <nav class="hidden items-center gap-1 text-sm font-medium md:flex" aria-label="Menu utama">
+            <nav class="hidden items-center gap-1 text-sm font-medium lg:flex" aria-label="Menu utama">
                 @foreach ($menu as [$rute, $label, $pola])
                     @php $aktif = request()->routeIs(...explode('|', $pola)); @endphp
                     <a href="{{ route($rute) }}"
@@ -36,19 +39,19 @@
                 @auth
                     <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm ml-3">Dashboard</a>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-primary btn-sm ml-3">Login</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary btn-sm ml-3">Login Panel</a>
                 @endauth
             </nav>
 
             {{-- Tombol menu layar kecil --}}
             <button type="button" data-toggle-menu aria-controls="menu-publik" aria-expanded="false" aria-label="Buka menu"
-                    class="rounded-md p-2 text-ink hover:bg-gray-100 md:hidden">
+                    class="rounded-md p-2 text-ink hover:bg-gray-100 lg:hidden">
                 <x-ikon nama="menu" data-ikon-buka />
                 <x-ikon nama="close" class="hidden h-6 w-6" data-ikon-tutup />
             </button>
         </div>
 
-        <nav id="menu-publik" class="hidden border-t border-line bg-white px-4 pb-4 md:hidden" aria-label="Menu utama seluler">
+        <nav id="menu-publik" class="hidden border-t border-line bg-white px-4 pb-4 lg:hidden" aria-label="Menu utama seluler">
             <div class="mx-auto flex max-w-6xl flex-col gap-1 pt-3 text-sm font-medium">
                 @foreach ($menu as [$rute, $label, $pola])
                     @php $aktif = request()->routeIs(...explode('|', $pola)); @endphp
@@ -58,7 +61,7 @@
                 @auth
                     <a href="{{ route('dashboard') }}" class="btn btn-primary mt-2">Dashboard</a>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-primary mt-2">Login</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary mt-2">Login Panel</a>
                 @endauth
             </div>
         </nav>

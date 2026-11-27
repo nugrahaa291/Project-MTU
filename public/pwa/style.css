@@ -150,3 +150,16 @@ form .tombol { margin-top: 16px; }
 .kartu > .tombol + .tombol { margin-top: 10px; }
 .aksi-kecil, .tombol-wadah { margin-top: 12px; }
 .tombol-wadah { margin-bottom: 12px; }
+
+@media (min-width: 768px) {
+    #app, .nav { max-width: 960px; }
+    .layar-gelap { align-items: center; }
+    .layar-gelap > .kartu { width: min(100%, 440px); }
+    .konten { padding-inline: 32px; }
+    .atas { padding-inline: 32px; }
+    .konten > div:has(#kartu-hari-ini) { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); align-items: start; gap: 16px; }
+    .konten > div:has(#kartu-hari-ini) > .kartu { margin: 0; }
+    #kartu-izin { grid-column: 2; }
+    .sheet { align-items: center; padding: 24px; }
+    .sheet .panel { border-radius: 16px; max-width: 580px; width: 100%; }
+}
