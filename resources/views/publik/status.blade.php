@@ -4,7 +4,7 @@
 @section('content')
     <div class="mx-auto max-w-xl px-4 py-12">
         <h1 class="text-2xl font-bold">Cek Status Lamaran</h1>
-        <p class="mb-6 text-gray-600">Masukkan kode lamaran dan nomor HP yang Anda daftarkan.</p>
+        <p class="mb-6 text-gray-600">Untuk lamaran lama, masukkan kode lamaran dan nomor HP saat melamar. Jika sudah memiliki akun, lihat status di <a href="{{ route('pelamar.riwayat') }}" class="font-semibold text-brand-dark">Lamaran Saya</a>.</p>
 
         <form method="POST" action="{{ route('status.cek') }}" class="card space-y-4 p-6">
             @csrf

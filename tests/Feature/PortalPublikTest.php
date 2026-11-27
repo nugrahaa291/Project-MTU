@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lamaran;
+use App\Models\Pelamar;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\SiapkanData;
@@ -11,6 +12,11 @@ use Tests\TestCase;
 class PortalPublikTest extends TestCase
 {
     use RefreshDatabase, SiapkanData;
+
+    private function masukSebagaiPelamar(): void
+    {
+        $this->actingAs(Pelamar::create(['nama' => 'Pelamar', 'email' => 'pelamar@example.test']), 'pelamar');
+    }
 
         public function test_beranda_menampilkan_profil_dan_lowongan_terbuka_saja(): void
     {
@@ -88,6 +94,7 @@ class PortalPublikTest extends TestCase
 
     public function test_form_driver_bertahap_dan_menandai_dokumen_wajib_dan_opsional(): void
     {
+        $this->masukSebagaiPelamar();
         $trailer = $this->lowongan(['judul' => 'Trailer', 'paket_dokumen' => 'trailer']);
         $wingbox = $this->lowongan(['judul' => 'Wingbox', 'paket_dokumen' => 'wingbox']);
 
@@ -106,6 +113,7 @@ class PortalPublikTest extends TestCase
 
     public function test_lamaran_driver_menyimpan_dokumen_sesuai_pilihan(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan(['judul' => 'Trailer', 'paket_dokumen' => 'trailer']);
 
@@ -121,6 +129,7 @@ class PortalPublikTest extends TestCase
 
     public function test_dokumen_wajib_driver_harus_diisi_tetapi_paklaring_trailer_opsional(): void
     {
+        $this->masukSebagaiPelamar();
         $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
 
         $this->post(route('lamaran.store', $lowongan), $this->dataDriver([
@@ -136,6 +145,7 @@ class PortalPublikTest extends TestCase
 
     public function test_paklaring_wajib_untuk_wingbox_dan_cdd_fuso(): void
     {
+        $this->masukSebagaiPelamar();
         foreach (['wingbox', 'cdd_fuso'] as $paket) {
             $lowongan = $this->lowongan(['paket_dokumen' => $paket]);
 
@@ -146,6 +156,7 @@ class PortalPublikTest extends TestCase
 
     public function test_jenis_dokumen_pendukung_harus_salah_satu_dari_tiga_pilihan(): void
     {
+        $this->masukSebagaiPelamar();
         $lowongan = $this->lowongan(['paket_dokumen' => 'cdd_fuso']);
 
         $this->post(route('lamaran.store', $lowongan), $this->dataDriver(['jenis_pendukung' => 'sim']))
@@ -201,6 +212,7 @@ class PortalPublikTest extends TestCase
     
     public function test_kirim_lamaran_lewat_fetch_membalas_json_berisi_alamat_tujuan(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
 
@@ -213,6 +225,7 @@ class PortalPublikTest extends TestCase
 
     public function test_kirim_lamaran_lewat_fetch_menolak_dengan_422_dan_daftar_error(): void
     {
+        $this->masukSebagaiPelamar();
         $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
 
         $this->post(route('lamaran.store', $lowongan), $this->dataDriver(['sim' => null, 'nik' => '123']), ['Accept' => 'application/json'])
@@ -224,6 +237,7 @@ class PortalPublikTest extends TestCase
 
         public function test_halaman_lamaran_terkirim_menampilkan_kode_dan_langkah_selanjutnya(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan(['judul' => 'Driver Trailer', 'paket_dokumen' => 'trailer']);
         $this->post(route('lamaran.store', $lowongan), $this->dataDriver());
@@ -235,7 +249,7 @@ class PortalPublikTest extends TestCase
             ->assertSee('Anda telah terdaftar sebagai calon')
             ->assertSee('Driver Trailer')
             ->assertSee('Langkah selanjutnya')
-            ->assertSee(route('status.form', ['kode' => $lamaran->kode]), false);
+            ->assertSee(route('pelamar.riwayat'), false);
     }
 
         public function test_halaman_detail_lowongan_hrd_punya_tombol_kembali_dan_aksi(): void
@@ -257,6 +271,7 @@ class PortalPublikTest extends TestCase
 
     public function test_pelamar_bisa_melamar_dan_berkas_tersimpan_privat(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan();
 
@@ -276,6 +291,7 @@ class PortalPublikTest extends TestCase
 
     public function test_nik_yang_sama_tidak_bisa_melamar_dua_kali_di_lowongan_yang_sama(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan();
 
@@ -287,6 +303,7 @@ class PortalPublikTest extends TestCase
 
     public function test_nik_yang_sama_boleh_melamar_lowongan_lain(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
 
         $this->post(route('lamaran.store', $this->lowongan()), $this->dataLamaran());
@@ -298,6 +315,7 @@ class PortalPublikTest extends TestCase
 
     public function test_validasi_berkas_dan_data(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
         $lowongan = $this->lowongan();
 
@@ -314,6 +332,7 @@ class PortalPublikTest extends TestCase
 
     public function test_lowongan_ditutup_atau_penuh_tidak_menerima_lamaran(): void
     {
+        $this->masukSebagaiPelamar();
         Storage::fake('local');
 
         $ditutup = $this->lowongan(['status' => 'ditutup']);

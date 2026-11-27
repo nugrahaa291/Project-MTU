@@ -62,7 +62,7 @@
             <section data-step="1" @if ($langkahAwal !== 1) hidden @endif class="card space-y-6 p-6">
                 <div class="space-y-4">
                     <h2 class="border-b border-line pb-2 text-base font-bold">Data pribadi</h2>
-                    <x-field name="nama" label="Nama Lengkap" required />
+                    <x-field name="nama" :value="auth('pelamar')->user()->nama" label="Nama Lengkap" required />
                     <x-field name="nik" label="NIK (16 digit)" inputmode="numeric" maxlength="16" required />
 
                     <div>
@@ -83,7 +83,7 @@
                 <div class="space-y-4">
                     <h2 class="border-b border-line pb-2 text-base font-bold">Kontak</h2>
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <x-field name="email" label="Email" type="email" hint="Dipakai untuk akun karyawan bila Anda diterima." required />
+                        <x-field name="email" :value="auth('pelamar')->user()->email" label="Email" type="email" hint="Dipakai untuk akun karyawan bila Anda diterima." required />
                         <x-field name="no_hp" label="Nomor HP / WhatsApp" placeholder="081234567890" inputmode="tel" required />
                     </div>
                 </div>

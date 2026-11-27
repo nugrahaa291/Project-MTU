@@ -38,6 +38,7 @@ return [
     */
 
     'guards' => [
+        'pelamar' => ['driver' => 'session', 'provider' => 'pelamar'],
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
@@ -62,6 +63,7 @@ return [
     */
 
     'providers' => [
+        'pelamar' => ['driver' => 'eloquent', 'model' => App\Models\Pelamar::class],
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),

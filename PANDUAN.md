@@ -124,3 +124,11 @@ Diperbaiki:
 Dibuang (spesifik bisnis lain / belum bermakna): toko online (produk, order, Midtrans, RajaOngkir, login Google),
 jenis armada / no. lambung / status order-pool, 8 berkas wajib (SIM, SKCK, paklaring, ...), rekap HK berbasis order,
 tabel gaji (tanpa kode di MTU), role enum '0'-'3' (tak jelas artinya).
+
+## Akun pelamar dan login Google
+
+Pelamar dapat mendaftar di `/pelamar/daftar`. Jalankan `php artisan migrate` untuk menambahkan akun dan relasi kepemilikan lamaran. Di **Lamaran Saya**, pelamar dapat melihat riwayat atau menautkan lamaran lama dengan kode lamaran dan nomor HP saat mendaftar. Setelah diterima, relasi lamaran menghubungkan profil karyawan ke riwayat pelamar. Karyawan menggunakan NIP dan PIN di `/absen`.
+
+Untuk mengaktifkan Google, buat OAuth client berjenis **Web application** di Google Cloud. Daftarkan URI callback persis seperti yang dipakai aplikasi, misalnya `http://localhost:8000/pelamar/google/callback` saat pengembangan atau URL HTTPS situs saat produksi. Gunakan host yang sama ketika membuka aplikasi dan saat menerima callback. Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_REDIRECT_URI` melalui konfigurasi server atau file `.env` lokal. Muat ulang cache konfigurasi Laravel setelah mengubahnya. Jika aplikasi OAuth masih dalam mode pengujian, tambahkan akun penguji di pengaturan Google.
+
+Akun email/password yang sudah terdaftar dapat memilih **Hubungkan Google** setelah login. Google harus mengonfirmasi alamat email yang sama untuk menautkan kedua cara masuk.

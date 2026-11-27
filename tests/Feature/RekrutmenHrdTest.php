@@ -34,7 +34,8 @@ class RekrutmenHrdTest extends TestCase
     {
         $hrd = $this->hrd();
         $lowongan = $this->lowongan();
-        $lamaran = $this->lamaran($lowongan, ['nama' => 'Dewi Lestari', 'email' => 'dewi@example.com']);
+        $pelamar = \App\Models\Pelamar::create(['nama' => 'Dewi Lestari', 'email' => 'dewi@example.com']);
+        $lamaran = $this->lamaran($lowongan, ['pelamar_id' => $pelamar->id, 'nama' => $pelamar->nama, 'email' => $pelamar->email]);
 
         // Langsung terima dari "diajukan" ditolak: harus lewat seleksi dulu
         $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $lamaran), [
@@ -54,6 +55,7 @@ class RekrutmenHrdTest extends TestCase
 
         $this->assertSame(StatusLamaran::Diterima, $lamaran->fresh()->status);
         $this->assertSame($lamaran->id, $karyawan->lamaran_id);
+        $this->assertSame($karyawan->id, $pelamar->lamaran()->sole()->karyawan->id);
         $this->assertSame($lowongan->jabatan_id, $karyawan->jabatan_id); // jabatan ikut lowongan
         $this->assertSame('Dewi Lestari', $karyawan->nama);
         $this->assertSame($lamaran->nik, $karyawan->nik);
@@ -175,7 +177,7 @@ class RekrutmenHrdTest extends TestCase
             route('hrd.dashboard'), route('hrd.lowongan.index'), route('hrd.lowongan.create'), route('hrd.lowongan.show', $lowongan),
             route('hrd.lowongan.edit', $lowongan), route('hrd.lamaran.index'), route('hrd.lamaran.show', $lamaran),
             route('hrd.karyawan.index'), route('hrd.karyawan.show', $karyawan),
-            route('lowongan.index'), route('lowongan.show', $lowongan), route('lamaran.create', $lowongan), route('status.form'),
+            route('lowongan.index'), route('lowongan.show', $lowongan), route('status.form'),
         ] as $url) {
             $this->actingAs($hrd)->get($url)->assertOk();
         }

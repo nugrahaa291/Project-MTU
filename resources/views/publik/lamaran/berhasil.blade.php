@@ -72,7 +72,7 @@
                 </ol>
 
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <a href="{{ route('status.form', ['kode' => $lamaran->kode]) }}" class="btn btn-primary flex-1 py-3 text-base">Cek Status Lamaran</a>
+                    <a href="{{ route('pelamar.riwayat') }}" class="btn btn-primary flex-1 py-3 text-base">Lamaran Saya</a>
                     <a href="{{ route('beranda') }}" class="btn btn-outline flex-1 py-3 text-base">Kembali ke Beranda</a>
                 </div>
             </div>
