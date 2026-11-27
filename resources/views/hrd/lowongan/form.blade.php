@@ -8,7 +8,16 @@
         @csrf
         @if ($lowongan->exists) @method('PUT') @endif
 
-        <x-field name="judul" label="Judul Lowongan" :value="$lowongan->judul" required />
+            <x-field name="judul" label="Unit" as="select" data-unit-pilih hint="Dokumen yang diminta dari pelamar menyesuaikan unit yang dipilih." required>
+            <option value="">Pilih unit...</option>
+            @foreach (array_keys(config('dokumen_lamaran.unit')) as $unit)
+            <option value="{{ $unit }}" @selected(old('judul', $lowongan->judul) === $unit)>{{ $unit }}</option>
+            @endforeach
+            {{-- Lowongan lama yang judulnya bukan unit (mis. Staff IT) tetap bisa diedit --}}
+            @if ($lowongan->exists && ! array_key_exists($lowongan->judul, config('dokumen_lamaran.unit')))
+                <option value="{{ $lowongan->judul }}" @selected(old('judul', $lowongan->judul) === $lowongan->judul)>{{ $lowongan->judul }} (judul lama)</option>
+            @endif
+        </x-field>
         <div class="grid gap-4 sm:grid-cols-2">
             <x-field name="jabatan_id" label="Unit / Penugasan" as="select" hint="Unit otomatis dipakai saat pelamar diterima." required>
                 <option value="">Pilih Unit...</option>
@@ -24,11 +33,40 @@
                 @endforeach
             </x-field>
             <x-field name="tanggal_buka" label="Tanggal Dibuka" type="date" :value="$lowongan->tanggal_buka?->toDateString()" required />
-            <x-field name="tanggal_tutup" label="Tanggal Ditutup" type="date" :value="$lowongan->tanggal_tutup?->toDateString()" required />
-        </div>
-        <x-field name="deskripsi" label="Deskripsi Pekerjaan" as="textarea" rows="5" :value="$lowongan->deskripsi" />
-        <x-field name="persyaratan" label="Persyaratan" as="textarea" rows="5" :value="$lowongan->persyaratan" hint="Satu persyaratan per baris." />
+                        <x-field name="tanggal_tutup" label="Tanggal Ditutup" type="date" :value="$lowongan->tanggal_tutup?->toDateString()" required />
+                             </div>
+                                     @php
+            $paketUnit = config('dokumen_lamaran.unit');
+            // Lowongan lama (judul bukan unit) menampilkan dokumen sesuai paketnya sendiri
+            if ($lowongan->exists && ! array_key_exists($lowongan->judul, $paketUnit)) {
+                $paketUnit[$lowongan->judul] = $lowongan->paket_dokumen ?: 'umum';
+            }
+        @endphp
+        <div class="rounded-lg border border-line bg-gray-50 p-4">
+            <p class="label">Dokumen yang Dipersiapkan</p>
+            <p class="mb-3 text-xs text-gray-500">Otomatis mengikuti unit yang dipilih. Inilah dokumen yang diminta dari pelamar.</p>
+            <p data-unit-kosong class="text-sm text-gray-500">Pilih unit untuk melihat daftar dokumen.</p>
 
+            @foreach ($paketUnit as $nama => $paket)
+                <ul data-unit-dokumen="{{ $nama }}" class="hidden space-y-1.5 text-sm">
+                    @foreach ((new \App\Models\Lowongan(['paket_dokumen' => $paket]))->daftarDokumen() as $d)
+                        <li class="flex gap-2">
+                            <x-ikon nama="check" class="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                            <span>
+                                {{ $d['label'] }}
+                                @if ($d['wajib'])
+                                    <span class="font-bold text-red-600">*</span>
+                                @else
+                                    <span class="text-gray-400">(opsional)</span>
+                                @endif
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endforeach
+            <p class="mt-3 text-xs text-gray-500"><span class="font-bold text-red-600">*</span> wajib diisi pelamar.</p>
+        </div>
+        <x-field name="persyaratan" label="Persyaratan" as="textarea" rows="5" :value="$lowongan->persyaratan" hint="Satu persyaratan per baris." />
         <div class="flex gap-2">
             <button class="btn btn-primary">Simpan</button>
             <a href="{{ route($rute.'.lowongan.index') }}" class="btn btn-outline">Batal</a>

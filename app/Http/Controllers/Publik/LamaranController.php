@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
+use Illuminate\Http\JsonResponse;
 
 class LamaranController extends Controller
 {
@@ -27,56 +28,72 @@ class LamaranController extends Controller
         return view('publik.lamaran.create', compact('lowongan'));
     }
 
-    public function store(StoreLamaranRequest $request, Lowongan $lowongan): RedirectResponse
-    {
+        public function store(StoreLamaranRequest $request, Lowongan $lowongan): RedirectResponse|JsonResponse
+        {
         if (! $lowongan->bisaDilamar()) {
-            return redirect()->route('lowongan.show', $lowongan)
-                ->with('error', 'Lowongan ini sedang tidak menerima lamaran.');
+        if ($request->expectsJson()) {
+        return response()->json(['message' => 'Lowongan ini sedang tidak menerima lamaran.'], 409);
+        }
+
+        return redirect()->route('lowongan.show', $lowongan)
+        ->with('error', 'Lowongan ini sedang tidak menerima lamaran.');
         }
 
         $kode = $this->buatKode();
         $folder = "lamaran/{$kode}"; // disk 'local' = privat (tidak bisa diakses lewat URL)
         $path = [];
 
-        try {
-            foreach (array_keys(Lamaran::DOKUMEN) as $jenis) {
-                if ($request->hasFile($jenis)) {
-                    $berkas = $request->file($jenis);
-                    // Ekstensi diambil dari isi file (bukan nama dari pengguna) supaya aman
-                    $path[$jenis] = $berkas->storeAs($folder, $jenis.'.'.$berkas->extension(), 'local');
-                }
-            }
-
-            $lamaran = Lamaran::create([
-                ...$request->safe()->except(array_keys(Lamaran::DOKUMEN)),
-                ...$path,
-                'no_hp' => Lamaran::normalisasiHp($request->validated('no_hp')),
-                'kode' => $kode,
-                'lowongan_id' => $lowongan->id,
-                'status' => StatusLamaran::Diajukan,
-            ]);
-        } catch (Throwable $e) {
-            // Jangan tinggalkan berkas yatim bila penyimpanan database gagal
-            Storage::disk('local')->deleteDirectory($folder);
-            throw $e;
+        // Kumpulkan berkas yang diunggah: [kolom di database => file]
+        $berkas = [];
+        foreach (array_keys($lowongan->paketDokumen()) as $kunci) {
+        if ($kunci === 'pendukung') {
+        // Pelamar memilih salah satu (ijazah / akte lahir / buku nikah)
+        if ($request->hasFile('dokumen_pendukung')) {
+        $berkas[$request->validated('jenis_pendukung')] = $request->file('dokumen_pendukung');
+        }
+        } elseif ($request->hasFile($kunci)) {
+        $berkas[$kunci] = $request->file($kunci);
+        }
         }
 
-        return redirect()->route('lamaran.berhasil', $lamaran);
-    }
+        try {
+        foreach ($berkas as $kolom => $file) {
+        // Ekstensi diambil dari isi file (bukan nama dari pengguna) supaya aman
+        $path[$kolom] = $file->storeAs($folder, $kolom.'.'.$file->extension(), 'local');
+        }
 
-    public function berhasil(Lamaran $lamaran): View
-    {
+        $lamaran = Lamaran::create([
+        ...$request->safe()->only(Lamaran::DATA_DIRI),
+        ...$path,
+        'no_hp' => Lamaran::normalisasiHp($request->validated('no_hp')),
+        'kode' => $kode,
+        'lowongan_id' => $lowongan->id,
+        'status' => StatusLamaran::Diajukan,
+        ]);
+        } catch (Throwable $e) {
+        // Jangan tinggalkan berkas yatim bila penyimpanan database gagal
+        Storage::disk('local')->deleteDirectory($folder);
+        throw $e;
+        }
+
+        $tujuan = route('lamaran.berhasil', $lamaran);
+
+        return $request->expectsJson()
+        ? response()->json(['redirect' => $tujuan])
+        : redirect($tujuan);
+        }
+
+        public function berhasil(Lamaran $lamaran): View
+        {
         $lamaran->load('lowongan');
-
         return view('publik.lamaran.berhasil', compact('lamaran'));
     }
 
     private function buatKode(): string
     {
-        do {
-            $kode = 'LMR-'.strtoupper(Str::random(8));
-        } while (Lamaran::where('kode', $kode)->exists());
-
+    do {
+    $kode = 'LMR-'.strtoupper(Str::random(8));
+    } while (Lamaran::where('kode', $kode)->exists());
         return $kode;
+        }
     }
-}

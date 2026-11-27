@@ -17,6 +17,8 @@ trait SiapkanData
     {
         return User::factory()->admin()->create($override);
     }
+    /** PIN yang dipakai semua karyawan uji (lolos aturan PIN: bukan angka berulang/berurutan). */
+    public const PIN_KARYAWAN = '482913';
 
     protected function hrd(): User
     {
@@ -95,7 +97,7 @@ trait SiapkanData
         ]);
     }
 
-    /** Karyawan aktif lengkap dengan akun login (password: "RahasiaBaru1"). */
+    /** Karyawan aktif lengkap dengan akun login (login: NIP + PIN "482913"). */
     protected function karyawan(array $override = [], bool $wajibGantiPassword = false): \App\Models\Karyawan
     {
         static $n = 0;
@@ -111,7 +113,7 @@ trait SiapkanData
             ...$override,
         ]);
 
-        $karyawan->user->password = 'RahasiaBaru1';
+        $karyawan->user->password = self::PIN_KARYAWAN;
         $karyawan->user->forceFill(['must_change_password' => $wajibGantiPassword])->save();
 
         return $karyawan->refresh();

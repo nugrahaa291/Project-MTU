@@ -15,56 +15,97 @@ function rakitSkrip() {
     return [bersih(baca('lib.js')), bersih(baca('api.js')), bersih(baca('app.js'))].join('\n');
 }
 
-const KANTOR = { latitude: -6.3215, longitude: 107.3376, radius_meter: 100, nama: 'Kantor Pusat' };
 const POSISI = {
     dekat: { latitude: -6.3215, longitude: 107.3376, accuracy: 8 },
-    jauh: { latitude: -6.3315, longitude: 107.3376, accuracy: 8 },
+    jauh: { latitude: -6.0, longitude: 106.5, accuracy: 15 }, // jauh dari kantor mana pun
 };
+const PROFIL = { nama: 'Budi Santoso', nip: 'MTU-0123', jabatan: 'Driver' };
 
-/** Membuat "dunia" aplikasi: server palsu + browser palsu. */
-function buatDunia({ posisi = 'dekat', mustChange = false, hariIni = {} } = {}) {
-    const server = {
-        panggilan: [],
-        token: 'TOKEN-PALSU',
-        hari: { tanggal: '2026-10-28', waktu_server: '2026-10-28T08:00:00+07:00', hari_kerja: true, kantor: KANTOR, jam_masuk: '08:00', toleransi_menit: 15, bisa_masuk: true, bisa_pulang: false, absensi: null, ...hariIni },
-        mustChange,
-        kirim: null,
-    };
+/** "Dunia" aplikasi: server palsu + browser palsu (GPS, kamera, kanvas). */
+function buatDunia({ geo = ['ok'], posisi = 'dekat', mustChange = false, izinLainnya = [] } = {}) {
+    const server = { panggilan: [], mustChange, hariIni: [], izinLainnya, kunci: new Map(), gagalBerikut: false, nomor: 0, kameraDibuka: 0 };
     const dom = new JSDOM('<!DOCTYPE html><body><div id="app"></div><div id="toast"></div></body>', { url: 'https://absen.test/absen', runScripts: 'outside-only', pretendToBeVisual: true });
     const w = dom.window;
-
     const json = (status, data) => ({ ok: status < 300, status, json: async () => data });
+
+    const buatCatatan = (jenis, tambahan = {}) => ({
+        id: ++server.nomor, jenis, jenis_label: jenis, kategori_izin: null, kategori_label: null, status: 'tercatat', status_label: 'Tercatat',
+        tanggal: '2026-11-14', waktu: '2026-11-14T10:32:05+07:00', jam: '10:32:05', tujuan: null, nama_lokasi: null, lokasi_aktual: null,
+        jarak_kantor_meter: null, alasan: null, ada_lampiran: false, alasan_penolakan: null, pengganti: null, ...tambahan,
+    });
+
     w.fetch = async (url, opsi = {}) => {
-        server.panggilan.push({ url, metode: opsi.method, auth: opsi.headers?.Authorization, body: opsi.body });
         const path = url.replace('/api', '');
+        const body = opsi.body;
+        server.panggilan.push({ url, metode: opsi.method, auth: opsi.headers?.Authorization, body });
+
         if (path === '/login') {
-            const b = JSON.parse(opsi.body);
-            return b.password === 'benar'
-                ? json(200, { token: server.token, token_type: 'Bearer', must_change_password: server.mustChange, karyawan: { nama: 'Budi Santoso', nip: '26100001', jabatan: 'Staff IT', email: b.email } })
-                : json(401, { message: 'Email atau password salah, atau akun dinonaktifkan.' });
+            const b = JSON.parse(body);
+            return b.nip === 'MTU-0123' && b.pin === '482913'
+                ? json(200, { token: 'TOKEN-PALSU', token_type: 'Bearer', must_change_pin: server.mustChange, karyawan: PROFIL })
+                : json(401, { message: 'NIP atau PIN salah, atau akun dinonaktifkan.', kode: 'login_gagal' });
         }
-        if (opsi.headers?.Authorization !== `Bearer ${server.token}`) return json(401, { message: 'Unauthenticated.' });
-        if (path === '/me') return json(200, { must_change_password: server.mustChange, karyawan: { nama: 'Budi Santoso', nip: '26100001', jabatan: 'Staff IT', email: 'budi@example.com' } });
-        if (path === '/password') {
+        if (opsi.headers?.Authorization !== 'Bearer TOKEN-PALSU') return json(401, { message: 'Unauthenticated.' });
+        if (path === '/me') return json(200, { must_change_pin: server.mustChange, karyawan: PROFIL });
+        if (path === '/pin') {
+            const b = JSON.parse(body);
+            if (b.pin_lama !== '482913') return json(422, { message: 'x', errors: { pin_lama: ['PIN lama tidak sesuai.'] } });
             server.mustChange = false;
-            return json(200, { message: 'Password berhasil diganti.' });
+            return json(200, { message: 'PIN berhasil didaftarkan.' });
         }
-        if (path === '/absensi/hari-ini') return server.mustChange ? json(403, { message: 'Ganti password dulu.', kode: 'wajib_ganti_password' }) : json(200, server.hari);
-        if (path === '/absensi/masuk' || path === '/absensi/pulang') {
-            server.kirim = { path, form: opsi.body };
-            const masuk = path.endsWith('masuk');
-            server.hari = { ...server.hari, bisa_masuk: false, bisa_pulang: masuk, absensi: { id: 1, tanggal: '2026-10-28', status: 'hadir', status_label: 'Hadir', jam_masuk: '07:58:00', jam_pulang: masuk ? null : '17:02:00', menit_terlambat: 0 } };
-            return json(201, { message: masuk ? 'Absen masuk berhasil. Selamat bekerja!' : 'Absen pulang berhasil.', absensi: server.hari.absensi });
+        if (path === '/aktivitas/ringkasan') {
+            return server.mustChange
+                ? json(403, { message: 'Ganti PIN dulu.', kode: 'wajib_ganti_pin' })
+                : json(200, { tanggal: '2026-11-14', waktu_server: '2026-11-14T10:32:05+07:00', hari_ini: server.hariIni, izin_lainnya: server.izinLainnya });
         }
-        if (path.startsWith('/absensi?bulan=')) return json(200, { bulan: '2026-10', ringkasan: { hadir: 1 }, data: [{ id: 1, tanggal: '2026-10-27', status: 'hadir', status_label: 'Hadir', jam_masuk: '07:55:00', jam_pulang: '17:01:00', menit_terlambat: 0 }] });
+        if (path.startsWith('/aktivitas?bulan=')) {
+            return json(200, { bulan: '2026-11', ringkasan: { standby: 1 }, data: server.hariIni, absensi_lama: [{ id: 1, tanggal: '2026-11-03', status: 'hadir', status_label: 'Hadir', jam_masuk: '07:55:00', jam_pulang: '17:01:00' }] });
+        }
+        if (['/aktivitas/standby', '/aktivitas/order', '/aktivitas/izin'].includes(path)) {
+            if (server.gagalBerikut) {
+                server.gagalBerikut = false;
+                return json(500, { message: 'Server sedang bermasalah.' });
+            }
+            const isForm = body && typeof body.get === 'function';
+            const kunci = isForm ? body.get('kunci') : JSON.parse(body).kunci;
+            if (server.kunci.has(kunci)) return json(200, { message: 'Kiriman ini sudah tercatat sebelumnya.', duplikat: true, kegiatan: server.kunci.get(kunci) });
+
+            let catatan;
+            if (path.endsWith('standby')) catatan = buatCatatan('standby');
+            else if (path.endsWith('order')) {
+                server.order = body;
+                catatan = buatCatatan('order', { tujuan: body.get('tujuan'), nama_lokasi: 'Jalan Tuparev, Nagasari', lokasi_aktual: { latitude: Number(body.get('latitude')), longitude: Number(body.get('longitude')), akurasi_meter: Number(body.get('akurasi')) } });
+            } else {
+                server.izin = body;
+                const kategori = body.get('kategori');
+                catatan = buatCatatan('izin', {
+                    kategori_izin: kategori, kategori_label: { libur: 'Libur', sakit: 'Sakit', lainnya: 'Lain-lain' }[kategori],
+                    status: kategori === 'lainnya' ? 'menunggu' : 'tercatat', status_label: kategori === 'lainnya' ? 'Menunggu Keputusan' : 'Tercatat',
+                    alasan: body.get('alasan'), ada_lampiran: body.has('lampiran'),
+                });
+                if (kategori === 'lainnya') server.izinLainnya = [catatan, ...server.izinLainnya];
+            }
+            server.kunci.set(kunci, catatan);
+            server.hariIni = [catatan, ...server.hariIni];
+            return json(201, { message: 'Tercatat.', duplikat: false, kegiatan: catatan });
+        }
         return json(404, { message: 'tidak ada' });
     };
 
-    const p = POSISI[posisi];
-    const coords = () => ({ coords: { ...p } });
-    Object.defineProperty(w.navigator, 'geolocation', { value: { watchPosition: (ok) => { setTimeout(() => ok(coords()), 0); return 7; }, getCurrentPosition: (ok) => ok(coords()), clearWatch() {} }, configurable: true });
-    const trek = { stop() { server.kameraDihentikan = true; } };
-    Object.defineProperty(w.navigator, 'mediaDevices', { value: { getUserMedia: async () => ({ getTracks: () => [trek] }) }, configurable: true });
+    // GPS palsu: daftar hasil berurutan, mis. ['ditolak', 'ok'] (hasil terakhir berulang)
+    const gps = { urutan: [...geo], panggilan: 0, posisi };
+    Object.defineProperty(w.navigator, 'geolocation', {
+        configurable: true,
+        value: {
+            getCurrentPosition: (ok, gagal) => {
+                const mode = gps.urutan[Math.min(gps.panggilan++, gps.urutan.length - 1)];
+                if (mode === 'ok') setTimeout(() => ok({ coords: { ...POSISI[gps.posisi] } }), 0);
+                else setTimeout(() => gagal({ code: mode === 'ditolak' ? 1 : mode === 'tak-tersedia' ? 2 : 3 }), 0);
+            },
+        },
+    });
+    const trek = { stop() { server.kameraDihentikan = (server.kameraDihentikan || 0) + 1; } };
+    Object.defineProperty(w.navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: async () => { server.kameraDibuka++; return { getTracks: () => [trek] }; } } });
     w.HTMLMediaElement.prototype.play = async () => {};
     Object.defineProperty(w.HTMLVideoElement.prototype, 'videoWidth', { get: () => 640, configurable: true });
     Object.defineProperty(w.HTMLVideoElement.prototype, 'videoHeight', { get: () => 480, configurable: true });
@@ -73,11 +114,10 @@ function buatDunia({ posisi = 'dekat', mustChange = false, hariIni = {} } = {}) 
     w.URL.createObjectURL = () => 'blob:palsu';
     w.URL.revokeObjectURL = () => {};
 
-    const jalan = () => w.eval(rakitSkrip());
-    return { w, dom, server, jalan, doc: w.document };
+    return { w, dom, server, gps, doc: w.document, jalan: () => w.eval(rakitSkrip()) };
 }
 
-async function tunggu(kondisi, ket = 'kondisi', ms = 1500) {
+async function tunggu(kondisi, ket = 'kondisi', ms = 2000) {
     const mulai = Date.now();
     while (Date.now() - mulai < ms) {
         if (kondisi()) return;
@@ -86,145 +126,371 @@ async function tunggu(kondisi, ket = 'kondisi', ms = 1500) {
     throw new Error(`Timeout menunggu: ${ket}`);
 }
 const teks = (d) => d.body.textContent.replace(/\s+/g, ' ');
-const ketik = (el, v) => { el.value = v; };
+const $ = (d, sel) => d.doc.querySelector(sel);
+const submit = (d, form) => form.dispatchEvent(new d.w.Event('submit', { cancelable: true, bubbles: true }));
 
-async function login(dunia, sandi = 'benar') {
-    const { doc, w } = dunia;
-    await tunggu(() => doc.getElementById('email'), 'form login');
-    ketik(doc.getElementById('email'), 'budi@example.com');
-    ketik(doc.getElementById('sandi'), sandi);
-    doc.querySelector('form').dispatchEvent(new w.Event('submit', { cancelable: true, bubbles: true }));
+async function login(d, nip = 'MTU-0123', pin = '482913') {
+    await tunggu(() => $(d, '#nip'), 'form login');
+    $(d, '#nip').value = nip;
+    $(d, '#pin').value = pin;
+    submit(d, $(d, 'form'));
 }
-
+async function keBeranda(d, opsi) {
+    d.jalan();
+    await login(d);
+    await tunggu(() => $(d, '#tombol-absen') && !$(d, '#tombol-absen').disabled, 'tombol Absen aktif');
+}
+async function bukaJenis(d, id) {
+    $(d, '#tombol-absen').click();
+    await tunggu(() => $(d, `#${id}`), `pilihan ${id}`);
+    $(d, `#${id}`).click();
+}
 const lewati = JSDOM ? false : 'jsdom tidak terpasang (npm i -D jsdom)';
 
-test('login salah menampilkan pesan, tidak menyimpan token', { skip: lewati }, async () => {
+/* --------------------------------------------------------------------- login */
+
+test('login dengan NIP salah menampilkan pesan dan tidak menyimpan token', { skip: lewati }, async () => {
     const d = buatDunia();
     d.jalan();
-    await login(d, 'salah');
-    await tunggu(() => !d.doc.querySelector('.galat').classList.contains('hidden'), 'pesan galat');
-    assert.match(d.doc.querySelector('.galat').textContent, /salah/);
+    await login(d, 'MTU-0123', '000001');
+    await tunggu(() => !$(d, '.galat').classList.contains('hidden'), 'pesan galat');
+    assert.match($(d, '.galat').textContent, /NIP atau PIN salah/);
     assert.equal(d.w.localStorage.getItem('pt.token'), null);
     d.w.close();
 });
 
-test('alur lengkap: login -> absen masuk dengan selfie -> tombol berganti pulang', { skip: lewati }, async () => {
-    const d = buatDunia({ posisi: 'dekat' });
-    d.jalan();
-    await login(d);
+test('login NIP + PIN langsung ke halaman Absen dengan satu tombol utama', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
 
-    await tunggu(() => d.doc.getElementById('tombol-aksi'), 'beranda');
-    await tunggu(() => /Absen Masuk$/.test(d.doc.getElementById('tombol-aksi').textContent), 'tombol Absen Masuk aktif');
-    assert.equal(d.doc.getElementById('tombol-aksi').disabled, false);
+    const kirim = JSON.parse(d.server.panggilan.find((c) => c.url === '/api/login').body);
+    assert.equal(kirim.nip, 'MTU-0123');
+    assert.equal(kirim.pin, '482913');
+    assert.match(kirim.device_name, /^PWA Desktop [a-z0-9]+$/);
     assert.equal(d.w.localStorage.getItem('pt.token'), 'TOKEN-PALSU');
+
     assert.match(teks(d.doc), /Budi Santoso/);
-    assert.match(d.doc.getElementById('kartu-lokasi').textContent, /0 m/);
-    assert.match(d.doc.getElementById('kartu-lokasi').textContent, /Di dalam area absen/);
-    assert.match(d.doc.getElementById('jam').textContent, /^08:00:\d\d$/); // jam mengikuti server (08:00 WIB)
-
-    // Nama perangkat dikirim saat login
-    const loginReq = d.server.panggilan.find((c) => c.url === '/api/login');
-    assert.match(JSON.parse(loginReq.body).device_name, /^PWA Desktop [a-z0-9]+$/);
-
-    d.doc.getElementById('tombol-aksi').click();
-    await tunggu(() => d.doc.querySelector('#sheet-kamera video'), 'pratinjau kamera');
-    assert.match(d.doc.querySelector('#sheet-kamera h2').textContent, /Masuk/);
-
-    const ambil = [...d.doc.querySelectorAll('#sheet-kamera button')].find((b) => b.textContent === 'Ambil Foto');
-    ambil.click();
-    await tunggu(() => d.doc.querySelector('#sheet-kamera img'), 'pratinjau hasil foto');
-    assert.equal(d.server.kameraDihentikan, true, 'kamera dimatikan setelah memotret');
-
-    [...d.doc.querySelectorAll('#sheet-kamera button')].find((b) => /Kirim Absen Masuk/.test(b.textContent)).click();
-    await tunggu(() => d.server.kirim, 'permintaan absen');
-
-    const form = d.server.kirim.form;
-    assert.equal(d.server.kirim.path, '/absensi/masuk');
-    assert.equal(form.get('latitude'), '-6.3215');
-    assert.equal(form.get('longitude'), '107.3376');
-    assert.equal(form.get('akurasi'), '8');
-    assert.equal(form.get('foto').type, 'image/jpeg');
-    assert.equal(d.server.panggilan.at(-1).auth ?? d.server.panggilan.find((c) => c.url.endsWith('/masuk')).auth, 'Bearer TOKEN-PALSU');
-
-    await tunggu(() => !d.doc.getElementById('sheet-kamera') && /Absen Pulang$/.test(d.doc.getElementById('tombol-aksi')?.textContent ?? ''), 'kembali ke beranda dengan tombol pulang');
-    assert.match(d.doc.getElementById('toast').textContent, /Absen masuk berhasil/);
-    assert.match(teks(d.doc), /Sudah absen masuk 07:58/);
+    assert.match($(d, '#jam').textContent, /^10:32:\d\d$/); // jam mengikuti server (WIB)
+    assert.equal($(d, '#tombol-absen').textContent, 'Absen');
+    assert.equal(d.doc.querySelectorAll('.tombol-absen').length, 1, 'hanya satu tombol utama');
+    assert.equal($(d, '#sheet'), null, 'pilihan belum tampil sebelum tombol ditekan');
     d.w.close();
 });
 
-test('di luar radius: tombol terkunci dan menampilkan jarak', { skip: lewati }, async () => {
-    const d = buatDunia({ posisi: 'jauh' });
-    d.jalan();
-    await login(d);
-    await tunggu(() => /Di luar area absen/.test(d.doc.getElementById('tombol-aksi')?.textContent ?? ''), 'tombol terkunci');
-    assert.equal(d.doc.getElementById('tombol-aksi').disabled, true);
-    assert.match(d.doc.getElementById('kartu-lokasi').textContent, /1,1 km/);
+test('tombol Absen menampilkan tiga pilihan: Standby, Order, Izin', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    $(d, '#tombol-absen').click();
+    await tunggu(() => $(d, '#sheet'), 'sheet pilihan');
+
+    const pilihan = [...d.doc.querySelectorAll('#sheet .pilihan strong')].map((e) => e.textContent);
+    assert.deepEqual(pilihan, ['Standby', 'Order', 'Izin']);
     d.w.close();
 });
 
-test('password sementara: dipaksa ganti sebelum beranda', { skip: lewati }, async () => {
+/* ------------------------------------------------------------------- standby */
+
+test('Standby: langsung Kirim tanpa lokasi, selfie, atau keterangan', { skip: lewati }, async () => {
+    const d = buatDunia({ geo: ['ditolak'] }); // bahkan bila GPS ditolak, Standby tetap jalan
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-standby');
+    await tunggu(() => $(d, '#kirim-standby'), 'tombol kirim standby');
+
+    assert.equal(d.doc.querySelectorAll('#sheet input, #sheet textarea').length, 0, 'tidak ada isian apa pun');
+    $(d, '#kirim-standby').click();
+    await tunggu(() => !$(d, '#sheet') && /Standby/.test($(d, '#kartu-hari-ini').textContent), 'standby tercatat');
+
+    const req = d.server.panggilan.find((c) => c.url === '/api/aktivitas/standby');
+    assert.deepEqual(Object.keys(JSON.parse(req.body)), ['kunci']);
+    assert.equal(d.gps.panggilan, 0, 'lokasi tidak diminta');
+    assert.equal(d.server.kameraDibuka, 0, 'kamera tidak dibuka');
+    assert.match($(d, '#toast').textContent, /Tercatat/);
+    d.w.close();
+});
+
+test('Kirim ditekan berulang tidak membuat permintaan ganda; kirim ulang memakai kunci yang sama', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-standby');
+    await tunggu(() => $(d, '#kirim-standby'));
+
+    d.server.gagalBerikut = true; // permintaan pertama gagal (mis. sinyal buruk)
+    const tombol = $(d, '#kirim-standby');
+    tombol.click();
+    tombol.click(); // penekanan kedua saat proses berjalan
+    await tunggu(() => !$(d, '.galat').classList.contains('hidden'), 'galat pengiriman');
+    assert.equal(d.server.panggilan.filter((c) => c.url === '/api/aktivitas/standby').length, 1, 'klik ganda hanya 1 permintaan');
+    assert.match($(d, '#kirim-standby').textContent, /Coba Kirim Lagi/);
+
+    $(d, '#kirim-standby').click();
+    await tunggu(() => !$(d, '#sheet'), 'berhasil setelah kirim ulang');
+
+    const kunci = d.server.panggilan.filter((c) => c.url === '/api/aktivitas/standby').map((c) => JSON.parse(c.body).kunci);
+    assert.equal(kunci.length, 2);
+    assert.equal(kunci[0], kunci[1], 'kirim ulang harus memakai kunci yang sama');
+    assert.equal(d.server.hariIni.length, 1);
+    d.w.close();
+});
+
+/* --------------------------------------------------------------------- order */
+
+test('Order: lokasi tujuan wajib diisi sebelum lanjut', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-order');
+    await tunggu(() => $(d, '#lanjut-tujuan'));
+
+    $(d, '#lanjut-tujuan').click();
+    assert.match($(d, '#sheet .galat').textContent, /wajib diisi/);
+    assert.equal(d.gps.panggilan, 0, 'lokasi belum diminta sebelum tujuan terisi');
+    d.w.close();
+});
+
+test('Order: kamera TERKUNCI selama lokasi belum terbaca, ada pesan jelas dan tombol Coba Lagi', { skip: lewati }, async () => {
+    const d = buatDunia({ geo: ['ditolak', 'ok'] });
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-order');
+    await tunggu(() => $(d, '#tujuan'));
+    $(d, '#tujuan').value = 'Gudang PT Maju Jaya, Cikarang';
+    $(d, '#lanjut-tujuan').click();
+
+    await tunggu(() => $(d, '#coba-lagi-lokasi'), 'tombol Coba Lagi');
+    assert.match($(d, '#status-lokasi').textContent, /Izin lokasi ditolak/);
+    assert.ok($(d, '#kamera-terkunci'), 'penanda kamera terkunci tampil');
+    assert.equal(d.server.kameraDibuka, 0, 'kamera TIDAK dibuka');
+    assert.equal($(d, 'video'), null);
+    assert.equal($(d, '#ambil-foto'), null);
+
+    // Coba Lagi berhasil -> kamera baru terbuka
+    $(d, '#coba-lagi-lokasi').click();
+    await tunggu(() => $(d, '#ambil-foto'), 'kamera terbuka setelah lokasi terbaca');
+    assert.equal(d.server.kameraDibuka, 1);
+    assert.equal($(d, '#kamera-terkunci'), null);
+    d.w.close();
+});
+
+test('Order: lokasi gagal karena sinyal/timeout juga mengunci kamera', { skip: lewati }, async () => {
+    for (const mode of ['tak-tersedia', 'timeout']) {
+        const d = buatDunia({ geo: [mode] });
+        await keBeranda(d);
+        await bukaJenis(d, 'pilih-order');
+        await tunggu(() => $(d, '#tujuan'));
+        $(d, '#tujuan').value = 'Gudang X';
+        $(d, '#lanjut-tujuan').click();
+        await tunggu(() => $(d, '#coba-lagi-lokasi'));
+        assert.equal(d.server.kameraDibuka, 0, `kamera tidak boleh terbuka (${mode})`);
+        assert.match($(d, '#status-lokasi').textContent, mode === 'timeout' ? /terlalu lama/ : /GPS/);
+        d.w.close();
+    }
+});
+
+test('Order lengkap dikirim dari luar radius kantor: tujuan, lokasi aktual, selfie, kunci', { skip: lewati }, async () => {
+    const d = buatDunia({ geo: ['ok'], posisi: 'jauh' });
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-order');
+    await tunggu(() => $(d, '#tujuan'));
+    $(d, '#tujuan').value = '  Gudang PT Maju Jaya,   Cikarang ';
+    $(d, '#lanjut-tujuan').click();
+
+    await tunggu(() => $(d, '#ambil-foto'), 'kamera');
+    $(d, '#ambil-foto').click();
+    await tunggu(() => $(d, '#sheet img'), 'pratinjau selfie');
+    await tunggu(() => !$(d, '#kirim-order').disabled, 'tombol kirim aktif setelah lokasi selfie terbaca');
+
+    assert.equal(d.server.kameraDihentikan, 1, 'kamera dimatikan setelah memotret');
+    assert.match($(d, '#info-order').textContent, /Gudang PT Maju Jaya, Cikarang/);
+    assert.match($(d, '#info-order').textContent, /-6\.000000, 106\.500000/);
+    assert.match($(d, '#info-order').textContent, /watermark/i);
+
+    $(d, '#kirim-order').click();
+    await tunggu(() => !$(d, '#sheet') && d.server.order, 'order terkirim');
+
+    const f = d.server.order;
+    assert.equal(f.get('tujuan'), 'Gudang PT Maju Jaya, Cikarang'); // spasi dirapikan
+    assert.equal(f.get('latitude'), '-6');
+    assert.equal(f.get('longitude'), '106.5');
+    assert.equal(f.get('akurasi'), '15');
+    assert.equal(f.get('foto').type, 'image/jpeg');
+    assert.match(f.get('kunci'), /^[A-Za-z0-9_-]{16,64}$/);
+    assert.deepEqual([...f.keys()].sort(), ['akurasi', 'foto', 'kunci', 'latitude', 'longitude', 'tujuan'], 'tidak ada jam/waktu dari HP');
+    assert.match($(d, '#kartu-hari-ini').textContent, /Order ke Gudang PT Maju Jaya, Cikarang/);
+    d.w.close();
+});
+
+test('Order: Kirim ditekan dua kali mengirim satu permintaan', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-order');
+    await tunggu(() => $(d, '#tujuan'));
+    $(d, '#tujuan').value = 'Gudang X';
+    $(d, '#lanjut-tujuan').click();
+    await tunggu(() => $(d, '#ambil-foto'));
+    $(d, '#ambil-foto').click();
+    await tunggu(() => $(d, '#kirim-order') && !$(d, '#kirim-order').disabled);
+
+    const tombol = $(d, '#kirim-order');
+    tombol.click();
+    tombol.click();
+    await tunggu(() => !$(d, '#sheet'));
+    assert.equal(d.server.panggilan.filter((c) => c.url === '/api/aktivitas/order').length, 1);
+    d.w.close();
+});
+
+/* ---------------------------------------------------------------------- izin */
+
+test('Izin Libur: langsung kirim', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-izin');
+    await tunggu(() => $(d, '#izin-libur'));
+    $(d, '#izin-libur').click();
+    await tunggu(() => $(d, '#kirim-izin'));
+
+    assert.equal($(d, '#kirim-izin').disabled, false);
+    $(d, '#kirim-izin').click();
+    await tunggu(() => !$(d, '#sheet') && d.server.izin);
+    assert.equal(d.server.izin.get('kategori'), 'libur');
+    assert.equal(d.server.izin.has('lampiran'), false);
+    assert.equal(d.server.kameraDibuka, 0);
+    d.w.close();
+});
+
+test('Izin Sakit: Kirim terkunci sampai SKD yang sah dipilih', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-izin');
+    await tunggu(() => $(d, '#izin-sakit'));
+    $(d, '#izin-sakit').click();
+    await tunggu(() => $(d, '#skd'));
+
+    assert.equal($(d, '#kirim-izin').disabled, true, 'tanpa SKD tidak bisa dikirim');
+    const pilihBerkas = (berkas) => {
+        Object.defineProperty($(d, '#skd'), 'files', { configurable: true, value: [berkas] });
+        $(d, '#skd').dispatchEvent(new d.w.Event('change'));
+    };
+
+    pilihBerkas(new d.w.File(['isi teks biasa yang panjang'], 'catatan.txt', { type: 'text/plain' }));
+    assert.match($(d, '#sheet .galat').textContent, /foto \(JPG\/PNG\) atau PDF/);
+    assert.equal($(d, '#kirim-izin').disabled, true);
+
+    pilihBerkas(new d.w.File(['%PDF-1.4 isi surat dokter'], 'skd-dokter.pdf', { type: 'application/pdf' }));
+    assert.equal($(d, '#kirim-izin').disabled, false);
+    assert.match($(d, '#nama-skd').textContent, /skd-dokter\.pdf/);
+
+    $(d, '#kirim-izin').click();
+    await tunggu(() => !$(d, '#sheet') && d.server.izin);
+    assert.equal(d.server.izin.get('kategori'), 'sakit');
+    assert.equal(d.server.izin.get('lampiran').name, 'skd-dokter.pdf');
+    d.w.close();
+});
+
+test('Izin Lain-lain: wajib alasan, catatan syarat pengganti tampil, status Menunggu Keputusan', { skip: lewati }, async () => {
+    const d = buatDunia();
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-izin');
+    await tunggu(() => $(d, '#izin-lain'));
+    $(d, '#izin-lain').click();
+    await tunggu(() => $(d, '#alasan'));
+
+    assert.equal($(d, '#catatan-izin').textContent, 'Izin ini hanya dapat disetujui jika HRD sudah menemukan karyawan pengganti. Jika tidak ada pengganti, izin akan ditolak.');
+    assert.equal($(d, '#kirim-izin').disabled, true);
+    $(d, '#alasan').value = 'ya';
+    $(d, '#alasan').dispatchEvent(new d.w.Event('input'));
+    assert.equal($(d, '#kirim-izin').disabled, true, 'alasan terlalu pendek');
+
+    $(d, '#alasan').value = 'Rumah keluarga terkena banjir';
+    $(d, '#alasan').dispatchEvent(new d.w.Event('input'));
+    assert.equal($(d, '#kirim-izin').disabled, false);
+    $(d, '#kirim-izin').click();
+    await tunggu(() => !$(d, '#sheet') && $(d, '#kartu-izin'), 'kartu status izin tampil');
+
+    assert.equal(d.server.izin.get('alasan'), 'Rumah keluarga terkena banjir');
+    assert.match($(d, '#kartu-izin').textContent, /Menunggu keputusan HRD/);
+    assert.match($(d, '#kartu-izin').textContent, /Menunggu Keputusan/);
+    d.w.close();
+});
+
+test('hasil keputusan izin tampil di halaman karyawan: pengganti atau alasan penolakan', { skip: lewati }, async () => {
+    const izin = (status, label, tambahan) => ({ id: 1, jenis: 'izin', kategori_izin: 'lainnya', kategori_label: 'Lain-lain', status, status_label: label, tanggal: '2026-11-13', jam: '09:00:00', ...tambahan });
+    const d = buatDunia({ izinLainnya: [
+        izin('disetujui', 'Disetujui', { pengganti: 'Tono Wijaya' }),
+        izin('ditolak', 'Ditolak', { alasan_penolakan: 'Belum ada pengganti' }),
+        izin('menunggu', 'Menunggu Keputusan'),
+    ] });
+    await keBeranda(d);
+
+    const kartu = $(d, '#kartu-izin').textContent;
+    assert.match(kartu, /Disetujui\. Pengganti: Tono Wijaya/);
+    assert.match(kartu, /Ditolak: Belum ada pengganti/);
+    assert.match(kartu, /Menunggu keputusan HRD/);
+    d.w.close();
+});
+
+/* ----------------------------------------------------------- PIN & sesi lain */
+
+test('PIN sementara: dipaksa mendaftarkan PIN sendiri sebelum beranda', { skip: lewati }, async () => {
     const d = buatDunia({ mustChange: true });
     d.jalan();
     await login(d);
-    await tunggu(() => d.doc.getElementById('lama'), 'layar ganti password');
-    assert.match(teks(d.doc), /password sementara/);
+    await tunggu(() => $(d, '#lama'), 'layar daftarkan PIN');
+    assert.match(teks(d.doc), /Daftarkan PIN/);
+    assert.equal($(d, '#tombol-absen'), null);
 
-    ketik(d.doc.getElementById('lama'), 'Sementara1');
-    ketik(d.doc.getElementById('baru'), 'PasswordBaru9');
-    ketik(d.doc.getElementById('ulang'), 'Beda12345');
-    d.doc.querySelector('form').dispatchEvent(new d.w.Event('submit', { cancelable: true, bubbles: true }));
-    await tunggu(() => !d.doc.querySelector('.galat').classList.contains('hidden'), 'galat konfirmasi');
-    assert.match(d.doc.querySelector('.galat').textContent, /tidak sama/);
+    const coba = async (baru, ulang) => {
+        $(d, '#lama').value = '482913';
+        $(d, '#baru').value = baru;
+        $(d, '#ulang').value = ulang;
+        submit(d, $(d, 'form'));
+        await new Promise((r) => setTimeout(r, 30));
+    };
+    const panggilanPin = () => d.server.panggilan.filter((c) => c.url === '/api/pin').length;
 
-    ketik(d.doc.getElementById('ulang'), 'PasswordBaru9');
-    d.doc.querySelector('form').dispatchEvent(new d.w.Event('submit', { cancelable: true, bubbles: true }));
-    await tunggu(() => d.doc.getElementById('tombol-aksi'), 'beranda setelah ganti password');
+    for (const [baru, ulang, pola] of [['12345', '12345', /6 digit/], ['111111', '111111', /mudah ditebak/], ['123456', '123456', /mudah ditebak/], ['739418', '739419', /tidak sama/]]) {
+        await coba(baru, ulang);
+        assert.match($(d, '.galat').textContent, pola);
+    }
+    assert.equal(panggilanPin(), 0, 'PIN lemah ditolak di HP sebelum dikirim');
+
+    await coba('739418', '739418');
+    await tunggu(() => $(d, '#tombol-absen'), 'beranda setelah PIN didaftarkan');
     assert.equal(d.server.mustChange, false);
     d.w.close();
 });
 
-test('sesi kedaluwarsa (401) mengembalikan ke login dengan pesan', { skip: lewati }, async () => {
+test('sesi kedaluwarsa (401) kembali ke login dan menutup form yang terbuka', { skip: lewati }, async () => {
     const d = buatDunia();
-    d.w.localStorage.setItem('pt.token', 'TOKEN-LAMA');
-    d.jalan();
-    await tunggu(() => d.doc.getElementById('email') && /berakhir/.test(teks(d.doc)), 'login dengan pesan sesi berakhir');
+    await keBeranda(d);
+    await bukaJenis(d, 'pilih-standby');
+    await tunggu(() => $(d, '#kirim-standby'));
+    d.w.localStorage.setItem('pt.token', 'TOKEN-LAMA'); // token berubah/dicabut
+    $(d, '#kirim-standby').click();
+
+    await tunggu(() => $(d, '#nip') && /berakhir/.test(teks(d.doc)), 'kembali ke login');
+    assert.equal($(d, '#sheet'), null);
     assert.equal(d.w.localStorage.getItem('pt.token'), null);
     d.w.close();
 });
 
-test('token tersimpan: langsung masuk beranda tanpa login ulang; keluar menghapus token', { skip: lewati }, async () => {
+test('riwayat bulanan memuat catatan baru dan riwayat absensi lama', { skip: lewati }, async () => {
     const d = buatDunia();
     d.w.localStorage.setItem('pt.token', 'TOKEN-PALSU');
     d.jalan();
-    await tunggu(() => d.doc.getElementById('tombol-aksi'), 'beranda');
+    await tunggu(() => $(d, '#tombol-absen'));
 
-    [...d.doc.querySelectorAll('.nav button')].find((b) => /Akun/.test(b.textContent)).click();
-    await tunggu(() => [...d.doc.querySelectorAll('button')].some((b) => b.textContent === 'Keluar'), 'tab akun');
-    [...d.doc.querySelectorAll('button')].find((b) => b.textContent === 'Keluar').click();
-    await tunggu(() => d.doc.getElementById('email'), 'kembali ke login');
-    assert.equal(d.w.localStorage.getItem('pt.token'), null);
-    assert.ok(d.server.panggilan.some((c) => c.url === '/api/logout' && c.metode === 'POST'));
-    d.w.close();
-});
-
-test('riwayat bulanan tampil', { skip: lewati }, async () => {
-    const d = buatDunia();
-    d.w.localStorage.setItem('pt.token', 'TOKEN-PALSU');
-    d.jalan();
-    await tunggu(() => d.doc.getElementById('tombol-aksi'), 'beranda');
     [...d.doc.querySelectorAll('.nav button')].find((b) => /Riwayat/.test(b.textContent)).click();
-    await tunggu(() => /Oktober 2026/.test(teks(d.doc)) && d.doc.querySelector('.item-riwayat'), 'riwayat');
+    await tunggu(() => /November 2026/.test(teks(d.doc)) && /Riwayat absensi lama/.test(teks(d.doc)), 'riwayat');
     assert.match(teks(d.doc), /07:55/);
-    assert.match(teks(d.doc), /hadir 1/);
     d.w.close();
 });
 
 test('teks dari server tidak pernah diperlakukan sebagai HTML (anti XSS)', { skip: lewati }, async () => {
-    const d = buatDunia({ hariIni: { absensi: { id: 1, tanggal: '2026-10-28', status: 'izin', status_label: '<img src=x onerror=alert(1)>', jam_masuk: null, jam_pulang: null, menit_terlambat: 0, keterangan: '<script>alert(1)</script>' }, bisa_masuk: false } });
+    const d = buatDunia();
+    d.server.hariIni = [{ id: 9, jenis: 'order', jenis_label: 'order', status: 'tercatat', status_label: '<img src=x onerror=alert(1)>', tanggal: '2026-11-14', jam: '10:00:00', tujuan: '<script>alert(1)</script>', nama_lokasi: null, lokasi_aktual: null }];
     d.w.localStorage.setItem('pt.token', 'TOKEN-PALSU');
     d.jalan();
-    await tunggu(() => d.doc.querySelector('.status-judul'), 'beranda');
+    await tunggu(() => $(d, '#kartu-hari-ini .item-riwayat'), 'daftar aktivitas');
+
     assert.equal(d.doc.querySelectorAll('img, script').length, 0);
-    assert.match(d.doc.querySelector('.status-judul').textContent, /<img/); // tampil sebagai teks biasa
+    assert.match($(d, '#kartu-hari-ini').textContent, /<script>alert\(1\)<\/script>/);
     d.w.close();
 });

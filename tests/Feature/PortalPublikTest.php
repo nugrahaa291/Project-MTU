@@ -12,6 +12,45 @@ class PortalPublikTest extends TestCase
 {
     use RefreshDatabase, SiapkanData;
 
+        public function test_beranda_menampilkan_profil_dan_lowongan_terbuka_saja(): void
+    {
+        $this->lowongan(['judul' => 'Lowongan Terbuka']);
+        $this->lowongan(['judul' => 'Lowongan Ditutup', 'status' => 'ditutup']);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee(config('perusahaan.tagline'))
+            ->assertSee('Lowongan Terbuka')
+            ->assertDontSee('Lowongan Ditutup');
+    }
+
+    public function test_beranda_tetap_tampil_tanpa_lowongan(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Belum ada lowongan yang dibuka.');
+    }
+
+    public function test_halaman_tentang_kami_menampilkan_visi_dan_misi(): void
+    {
+        $this->get('/tentang-kami')
+            ->assertOk()
+            ->assertSee('Visi')
+            ->assertSee('Misi')
+            ->assertSee(config('perusahaan.kontak.email'));
+    }
+
+    public function test_navbar_publik_memuat_empat_menu_utama(): void
+    {
+        $this->get('/')
+            ->assertSee(route('beranda'), false)
+            ->assertSee(route('tentang'), false)
+            ->assertSee(route('lowongan.index'), false)
+            ->assertSee(route('status.form'), false)
+            ->assertSee('Beranda')
+            ->assertSee('Tentang Kami')
+            ->assertSee('Lowongan Kerja')
+            ->assertSee('Cek Status');
+    }
+
     public function test_halaman_lowongan_hanya_menampilkan_yang_terbuka(): void
     {
         $this->lowongan(['judul' => 'Lowongan Terbuka']);
@@ -25,6 +64,195 @@ class PortalPublikTest extends TestCase
             ->assertDontSee('Lowongan Ditutup')
             ->assertDontSee('Lowongan Kedaluwarsa')
             ->assertDontSee('Lowongan Belum Buka');
+    }
+
+        /** Data lamaran driver: tanpa CV, dengan dokumen paket driver. */
+    private function dataDriver(array $override = []): array
+    {
+        $data = $this->dataLamaran();
+        unset($data['cv']);
+
+        return [
+            ...$data,
+            'sim' => $this->png('sim.png'),
+            'kk' => $this->png('kk.png'),
+            'skck' => $this->pdf('skck.pdf'),
+            'domisili' => $this->pdf('domisili.pdf'),
+            'paklaring' => $this->pdf('paklaring.pdf'),
+            'jenis_pendukung' => 'akte_lahir',
+            'dokumen_pendukung' => $this->pdf('akte.pdf'),
+            'surat_lamaran' => $this->pdf('surat.pdf'),
+            ...$override,
+        ];
+    }
+
+    public function test_form_driver_bertahap_dan_menandai_dokumen_wajib_dan_opsional(): void
+    {
+        $trailer = $this->lowongan(['judul' => 'Trailer', 'paket_dokumen' => 'trailer']);
+        $wingbox = $this->lowongan(['judul' => 'Wingbox', 'paket_dokumen' => 'wingbox']);
+
+        $this->get(route('lamaran.create', $trailer))
+            ->assertOk()
+            ->assertSee('Data Diri')
+            ->assertSee('Dokumen')
+            ->assertSee('Surat Lamaran')
+            ->assertSee('Paklaring (opsional)')
+            ->assertDontSee('CV');
+
+        $this->get(route('lamaran.create', $wingbox))
+            ->assertOk()
+            ->assertDontSee('Paklaring (opsional)');
+    }
+
+    public function test_lamaran_driver_menyimpan_dokumen_sesuai_pilihan(): void
+    {
+        Storage::fake('local');
+        $lowongan = $this->lowongan(['judul' => 'Trailer', 'paket_dokumen' => 'trailer']);
+
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver())->assertRedirect();
+
+        $lamaran = Lamaran::firstOrFail();
+        foreach (['pas_foto', 'ktp', 'sim', 'kk', 'skck', 'domisili', 'paklaring', 'akte_lahir', 'surat_lamaran'] as $kolom) {
+            Storage::disk('local')->assertExists($lamaran->{$kolom});
+        }
+        $this->assertNull($lamaran->cv);
+        $this->assertNull($lamaran->ijazah); // hanya akte lahir yang dipilih
+    }
+
+    public function test_dokumen_wajib_driver_harus_diisi_tetapi_paklaring_trailer_opsional(): void
+    {
+        $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
+
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver([
+            'sim' => null, 'skck' => null, 'surat_lamaran' => null,
+            'jenis_pendukung' => null, 'dokumen_pendukung' => null,
+            'paklaring' => null,
+        ]))
+            ->assertSessionHasErrors(['sim', 'skck', 'surat_lamaran', 'jenis_pendukung', 'dokumen_pendukung'])
+            ->assertSessionDoesntHaveErrors('paklaring');
+
+        $this->assertSame(0, Lamaran::count());
+    }
+
+    public function test_paklaring_wajib_untuk_wingbox_dan_cdd_fuso(): void
+    {
+        foreach (['wingbox', 'cdd_fuso'] as $paket) {
+            $lowongan = $this->lowongan(['paket_dokumen' => $paket]);
+
+            $this->post(route('lamaran.store', $lowongan), $this->dataDriver(['paklaring' => null]))
+                ->assertSessionHasErrors('paklaring');
+        }
+    }
+
+    public function test_jenis_dokumen_pendukung_harus_salah_satu_dari_tiga_pilihan(): void
+    {
+        $lowongan = $this->lowongan(['paket_dokumen' => 'cdd_fuso']);
+
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver(['jenis_pendukung' => 'sim']))
+            ->assertSessionHasErrors('jenis_pendukung');
+    }
+
+    public function test_detail_lowongan_menampilkan_daftar_dokumen(): void
+    {
+        $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
+
+        $this->get(route('lowongan.show', $lowongan))
+            ->assertOk()
+            ->assertSee('Dokumen yang Dipersiapkan')
+            ->assertSee('SIM')
+            ->assertSee('Ijazah / Akte Lahir / Buku Nikah');
+    }
+
+        public function test_hrd_memilih_unit_dan_paket_dokumen_mengikuti_unit(): void
+    {
+        $hrd = $this->hrd();
+        $jabatan = \App\Models\Jabatan::firstOrCreate(['nama' => 'Driver'], ['aktif' => true]);
+        $dasar = [
+            'jabatan_id' => $jabatan->id,
+            'lokasi' => 'Karawang',
+            'kuota' => 2,
+            'tanggal_buka' => today()->toDateString(),
+            'tanggal_tutup' => today()->addDays(10)->toDateString(),
+            'status' => 'dibuka',
+        ];
+
+            foreach (['Driver Trailer' => 'trailer', 'Driver Wingbox' => 'wingbox', 'Driver CDD' => 'cdd_fuso', 'Driver Fuso' => 'cdd_fuso'] as $unit => $paket) {
+            $this->actingAs($hrd)->post(route('hrd.lowongan.store'), [...$dasar, 'judul' => $unit])
+                ->assertSessionHasNoErrors();
+
+            $this->assertSame($paket, \App\Models\Lowongan::where('judul', $unit)->value('paket_dokumen'));
+        }
+    }
+
+    public function test_lowongan_baru_hanya_boleh_memakai_unit_yang_tersedia(): void
+    {
+        $jabatan = \App\Models\Jabatan::firstOrCreate(['nama' => 'Driver'], ['aktif' => true]);
+
+        $this->actingAs($this->hrd())->post(route('hrd.lowongan.store'), [
+            'judul' => 'Staff IT',
+            'jabatan_id' => $jabatan->id,
+            'lokasi' => 'Karawang',
+            'kuota' => 1,
+            'tanggal_buka' => today()->toDateString(),
+            'tanggal_tutup' => today()->addDays(10)->toDateString(),
+            'status' => 'dibuka',
+        ])->assertSessionHasErrors('judul');
+    }
+    
+    public function test_kirim_lamaran_lewat_fetch_membalas_json_berisi_alamat_tujuan(): void
+    {
+        Storage::fake('local');
+        $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
+
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver(), ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonStructure(['redirect']);
+
+        $this->assertSame(1, Lamaran::count());
+    }
+
+    public function test_kirim_lamaran_lewat_fetch_menolak_dengan_422_dan_daftar_error(): void
+    {
+        $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
+
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver(['sim' => null, 'nik' => '123']), ['Accept' => 'application/json'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['sim', 'nik']);
+
+        $this->assertSame(0, Lamaran::count());
+    }
+
+        public function test_halaman_lamaran_terkirim_menampilkan_kode_dan_langkah_selanjutnya(): void
+    {
+        Storage::fake('local');
+        $lowongan = $this->lowongan(['judul' => 'Driver Trailer', 'paket_dokumen' => 'trailer']);
+        $this->post(route('lamaran.store', $lowongan), $this->dataDriver());
+        $lamaran = Lamaran::firstOrFail();
+
+        $this->get(route('lamaran.berhasil', $lamaran))
+            ->assertOk()
+            ->assertSee($lamaran->kode)
+            ->assertSee('Anda telah terdaftar sebagai calon')
+            ->assertSee('Driver Trailer')
+            ->assertSee('Langkah selanjutnya')
+            ->assertSee(route('status.form', ['kode' => $lamaran->kode]), false);
+    }
+
+        public function test_halaman_detail_lowongan_hrd_punya_tombol_kembali_dan_aksi(): void
+    {
+        $lowongan = $this->lowongan([
+            'judul' => 'Driver Wingbox',
+            'paket_dokumen' => 'wingbox',
+            'persyaratan' => 'Usia 25 - 45 Tahun',
+        ]);
+
+        $this->actingAs($this->hrd())->get(route('hrd.lowongan.show', $lowongan))
+            ->assertOk()
+            ->assertSee('Driver Wingbox')
+            ->assertSee('Kembali')
+            ->assertSee(route('hrd.lowongan.index'), false)
+            ->assertSee(route('hrd.lowongan.edit', $lowongan), false)
+            ->assertSee('Usia 25 - 45 Tahun');
     }
 
     public function test_pelamar_bisa_melamar_dan_berkas_tersimpan_privat(): void
@@ -114,3 +342,5 @@ class PortalPublikTest extends TestCase
         $this->post(route('status.cek'), ['nama' => 'Siti Aminah'])->assertSessionHasErrors(['kode', 'no_hp']);
     }
 }
+
+

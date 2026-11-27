@@ -6,7 +6,7 @@
 @props(['name', 'label', 'as' => 'input', 'type' => 'text', 'value' => null, 'hint' => null])
 <div {{ $attributes->only('class') }}>
     <label for="{{ $name }}" class="label">
-        {{ $label }}@if ($attributes->has('required')) <span class="text-brand">*</span>@endif
+        {{ $label }}@if ($attributes->get('required')) <span class="text-red-600">*</span>@endif
     </label>
 
     @if ($as === 'textarea')

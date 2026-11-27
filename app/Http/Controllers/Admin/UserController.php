@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Services\KaryawanService;
+use App\Support\Pin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -177,7 +178,8 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        $passwordSementara = KaryawanService::passwordSementara();
+        $jenis = $user->isKaryawan() ? 'PIN' : 'Password';
+        $passwordSementara = $user->isKaryawan() ? Pin::acak() : KaryawanService::passwordSementara();
 
         $user->password = $passwordSementara;
         $user->forceFill(['must_change_password' => true])->save();
@@ -186,11 +188,12 @@ class UserController extends Controller
         ActivityLog::catat(
             $request->user(),
             'reset_password',
-            "Mereset password pengguna {$user->name}"
+            "Mereset {$jenis} pengguna {$user->name}"
         );
 
         return back()
-            ->with('success', "Password untuk {$user->name} berhasil direset.")
+            ->with('success', "{$jenis} untuk {$user->name} berhasil direset.")
+            ->with('jenis_kredensial', $jenis)
             ->with('password_sementara', $passwordSementara);
     }
 }

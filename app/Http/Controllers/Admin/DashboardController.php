@@ -43,7 +43,24 @@ class DashboardController extends Controller
             'total_pelamar_diterima' => Lamaran::where('status', StatusLamaran::Diterima->value)->count(),
         ];
 
-        $lamaranTerbaru = Lamaran::with('lowongan')->latest()->limit(6)->get();
+        $lamaranTerbaru = Lamaran::with('lowongan')
+            ->where(function ($q) {
+                $q->where('status', '!=', StatusLamaran::Diterima->value)
+                    ->orWhere(function ($sub) {
+                        $sub->where('status', StatusLamaran::Diterima->value)
+                            ->where(function ($tgl) {
+                                $batas = now()->subDays(3);
+                                $tgl->where('diputuskan_pada', '>=', $batas)
+                                    ->orWhere(function ($fallback) use ($batas) {
+                                        $fallback->whereNull('diputuskan_pada')
+                                            ->where('updated_at', '>=', $batas);
+                                    });
+                            });
+                    });
+            })
+            ->latest()
+            ->limit(6)
+            ->get();
 
         $penggunaTerbaru = User::latest('id')
             ->limit(5)

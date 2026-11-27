@@ -115,7 +115,7 @@ class LamaranController extends Controller
             // flash() = hanya tersedia untuk SATU permintaan berikutnya, lalu hilang.
             return redirect()->route($rute, $karyawan)
                 ->with('success', 'Pelamar diterima dan akun karyawan berhasil dibuat.')
-                ->with('password_sementara', $password);
+                ->with('pin_sementara', $password);
         });
     }
 

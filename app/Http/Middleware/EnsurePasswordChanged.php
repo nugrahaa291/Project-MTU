@@ -16,8 +16,8 @@ class EnsurePasswordChanged
         if ($user && $user->must_change_password) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Anda harus mengganti password sementara terlebih dahulu.',
-                    'kode' => 'wajib_ganti_password',
+                    'message' => 'Anda harus mengganti PIN sementara terlebih dahulu.',
+                    'kode' => 'wajib_ganti_pin',
                 ], 403);
             }
 
