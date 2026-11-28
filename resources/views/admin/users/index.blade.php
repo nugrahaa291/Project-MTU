@@ -4,9 +4,9 @@
 @section('content')
     @if (session('password_sementara'))
         <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
-            <p class="font-bold">{{ session('jenis_kredensial', 'Password') }} sementara</p>
+            <p class="font-bold">Password sementara</p>
             <p class="mt-1 font-mono text-lg font-bold select-all">{{ session('password_sementara') }}</p>
-            <p class="mt-1 text-xs text-amber-700">Salin {{ session('jenis_kredensial', 'password') }} ini sekarang dan sampaikan kepada pengguna.</p>
+            <p class="mt-1 text-xs text-amber-700">Salin password ini sekarang dan sampaikan kepada pengguna.</p>
         </div>
     @endif
 
@@ -85,9 +85,9 @@
                         <td class="space-x-1 text-right whitespace-nowrap">
                             <a href="{{ route('admin.users.edit', $u) }}" class="btn btn-outline btn-sm">Edit</a>
 
-                            <form method="POST" action="{{ route('admin.users.reset-password', $u) }}" class="inline" data-konfirmasi="Reset {{ $u->isKaryawan() ? 'PIN' : 'password' }} untuk {{ $u->name }}?">
+                            <form method="POST" action="{{ route('admin.users.reset-password', $u) }}" class="inline" data-konfirmasi="Reset password untuk {{ $u->name }}?">
                                 @csrf
-                                <button type="submit" class="btn btn-outline btn-sm">Reset {{ $u->isKaryawan() ? 'PIN' : 'Pwd' }}</button>
+                                <button type="submit" class="btn btn-outline btn-sm">Reset password</button>
                             </form>
 
                             @if ($u->id === auth()->id())

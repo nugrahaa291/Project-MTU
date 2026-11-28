@@ -23,15 +23,17 @@ Route::get('/lowongan', [Publik\LowonganController::class, 'index'])->name('lowo
 Route::get('/lowongan/{lowongan}', [Publik\LowonganController::class, 'show'])->name('lowongan.show');
 Route::prefix('pelamar')->name('pelamar.')->group(function () {
     Route::get('masuk', [Publik\AkunPelamarController::class, 'form'])->name('login');
-    Route::post('masuk', [Publik\AkunPelamarController::class, 'masuk'])->middleware('throttle:10,1');
+    Route::post('masuk', [Publik\AkunPelamarController::class, 'masuk'])->middleware('throttle:10,1')->name('login.store');
+    Route::post('masuk-karyawan', [Publik\AkunPelamarController::class, 'masukKaryawan'])->middleware('throttle:10,1')->name('login.karyawan');
     Route::get('daftar', [Publik\AkunPelamarController::class, 'form'])->name('daftar');
-    Route::post('daftar', [Publik\AkunPelamarController::class, 'daftar'])->middleware('throttle:5,1');
+    Route::post('daftar', [Publik\AkunPelamarController::class, 'daftar'])->middleware('throttle:5,1')->name('daftar.store');
     Route::get('google', [Publik\GooglePelamarController::class, 'mulai'])->middleware('throttle:20,1')->name('google');
     Route::get('google/callback', [Publik\GooglePelamarController::class, 'callback'])->name('google.callback');
 });
 
 Route::middleware(RequirePelamar::class)->group(function () {
     Route::get('/pelamar/lamaran', [Publik\AkunPelamarController::class, 'riwayat'])->name('pelamar.riwayat');
+    Route::post('/pelamar/hubungkan-karyawan', [Publik\AkunPelamarController::class, 'hubungkanKaryawan'])->middleware('throttle:10,1')->name('pelamar.hubungkan.karyawan');
     Route::post('/pelamar/lamaran/tautkan', [Publik\AkunPelamarController::class, 'tautkanLamaran'])->middleware('throttle:5,1')->name('pelamar.tautkan');
     Route::post('/pelamar/keluar', [Publik\AkunPelamarController::class, 'keluar'])->name('pelamar.keluar');
     Route::get('/lowongan/{lowongan}/lamar', [Publik\LamaranController::class, 'create'])->name('lamaran.create');

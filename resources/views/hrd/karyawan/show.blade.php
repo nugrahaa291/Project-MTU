@@ -3,14 +3,14 @@
 
 @section('content')
     @php $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd'; @endphp
-    {{-- PIN sementara hanya tampil SEKALI (flash), tidak disimpan di mana pun dalam bentuk asli --}}
-    @if (session('pin_sementara'))
+    {{-- password sementara hanya tampil SEKALI (flash), tidak disimpan di mana pun dalam bentuk asli --}}
+    @if (session('password_sementara'))
         <div class="mb-6 rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
-            <p class="font-bold text-amber-900">PIN sementara (tampil sekali ini saja)</p>
-            <p class="mt-2 font-mono text-2xl font-bold tracking-wider text-ink select-all">{{ session('pin_sementara') }}</p>
+            <p class="font-bold text-amber-900">Password sementara (tampil sekali ini saja)</p>
+            <p class="mt-2 font-mono text-2xl font-bold tracking-wider text-ink select-all">{{ session('password_sementara') }}</p>
             <p class="mt-2 text-sm text-amber-800">
                 Sampaikan ke <strong>{{ $karyawan->nama }}</strong> ({{ $karyawan->user->email }}) lewat jalur aman.
-                Login di halaman Absen memakai <strong>NIP {{ $karyawan->nip }}</strong> dan PIN ini. Karyawan wajib mendaftarkan PIN sendiri saat pertama kali login. Bila hilang, gunakan tombol <em>Reset PIN</em>.
+                Login di halaman Absen memakai <strong>NIP {{ $karyawan->nip }}</strong> dan password ini. Karyawan wajib mendaftarkan password sendiri saat pertama kali login. Bila hilang, gunakan tombol <em>Reset password</em>.
             </p>
         </div>
     @endif
@@ -38,7 +38,7 @@
                     <div class="sm:col-span-2"><dt class="text-gray-500">Asal lamaran</dt>
                         <dd><a class="font-medium text-brand" href="{{ route($rute.'.lamaran.show', $karyawan->lamaran) }}">{{ $karyawan->lamaran->kode }} - {{ $karyawan->lamaran->lowongan->judul }}</a></dd></div>
                 @endif
-                <div><dt class="text-gray-500">Status PIN</dt>
+                <div><dt class="text-gray-500">Status password</dt>
                     <dd class="font-medium">{{ $karyawan->user->must_change_password ? 'Masih sementara' : 'Sudah didaftarkan karyawan' }}</dd></div>
             </dl>
 
@@ -46,8 +46,8 @@
                 <div class="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
                     <a href="{{ route($rute.'.karyawan.edit', $karyawan) }}" class="btn btn-outline">Edit</a>
                     <form method="POST" action="{{ route($rute.'.karyawan.reset-password', $karyawan) }}"
-                          data-konfirmasi="Reset PIN? PIN lama tidak berlaku lagi dan perangkat mobile akan keluar.">
-                        @csrf<button class="btn btn-dark">Reset PIN</button>
+                          data-konfirmasi="Reset password? password lama tidak berlaku lagi dan perangkat mobile akan keluar.">
+                        @csrf<button class="btn btn-dark">Reset password</button>
                     </form>
                 </div>
             @endif

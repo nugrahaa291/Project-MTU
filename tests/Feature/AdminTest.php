@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
-use App\Models\ActivityLog;
 use App\Models\Jabatan;
-use App\Models\KalenderKerja;
 use App\Models\Pengaturan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -74,7 +72,7 @@ class AdminTest extends TestCase
             'no_hp' => '081299990001',
             'jabatan_id' => $jabatan->id,
             'tanggal_masuk' => '2026-11-01',
-        ])->assertSessionHas('pin_sementara');
+        ])->assertSessionHas('password_sementara');
 
         // 5. Admin bisa akses Absensi, Kalender, Jabatan
         $this->actingAs($admin)->get(route('admin.absensi.index'))->assertOk();

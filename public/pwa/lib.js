@@ -150,23 +150,13 @@ export function buatKunci() {
     return [...bait].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** Aturan PIN yang sama dengan server (App\Support\Pin): 6 digit, bukan pola yang mudah ditebak. */
-export function pinValid(pin) {
-    if (!/^\d{6}$/.test(pin)) return false;
-    if (/^(\d{1,3})\1+$/.test(pin)) return false; // 111111, 121212, 123123
-    let naik = true;
-    let turun = true;
-    for (let i = 1; i < 6; i++) {
-        const selisih = (Number(pin[i]) - Number(pin[i - 1]) + 10) % 10;
-        naik = naik && selisih === 1;
-        turun = turun && selisih === 9;
+export function pesanPassword(password) {
+    if ([...password].length < 8 || !/\p{L}/u.test(password) || !/\p{N}/u.test(password)) {
+        return 'Gunakan minimal 8 karakter dengan huruf dan angka.';
     }
-    return !(naik || turun);
-}
-
-export function pesanPin(pin) {
-    if (!/^\d{6}$/.test(pin)) return 'PIN harus 6 digit angka.';
-    if (!pinValid(pin)) return 'PIN terlalu mudah ditebak (angka berulang atau berurutan). Pilih kombinasi lain.';
+    if (new TextEncoder().encode(password).length > 72 || password.includes('\0')) {
+        return 'Password maksimal 72 byte dan harus berupa teks.';
+    }
     return null;
 }
 

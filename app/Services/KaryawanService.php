@@ -7,7 +7,6 @@ use App\Exceptions\RekrutmenException;
 use App\Models\Karyawan;
 use App\Models\Lamaran;
 use App\Models\User;
-use App\Support\Pin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,7 +17,7 @@ class KaryawanService
      * Dibungkus transaksi: kalau salah satu gagal, dua-duanya dibatalkan.
      *
      * @param  array{nama:string,email:string,nik:string,no_hp:string,alamat?:?string,jabatan_id:int,tanggal_masuk:string,lamaran_id?:?int,nip?:?string}  $data
-     * @return array{0: Karyawan, 1: string}  [karyawan, pinSementara]
+     * @return array{0: Karyawan, 1: string} [karyawan, passwordSementara]
      */
     public function buat(array $data): array
     {
@@ -32,8 +31,8 @@ class KaryawanService
         }
 
         return DB::transaction(function () use ($data, $nipManual) {
-            // Karyawan login dengan NIP + PIN. PIN sementara 6 digit; wajib diganti saat login pertama.
-            $passwordSementara = Pin::acak();
+            // Karyawan login dengan NIP + password. Password sementara wajib diganti saat login pertama.
+            $passwordSementara = self::passwordSementara();
 
             $user = new User([
                 'name' => $data['nama'],
@@ -86,10 +85,10 @@ class KaryawanService
         ]);
     }
 
-    /** Membuat PIN sementara baru (misalnya karyawan lupa PIN). */
+    /** Membuat password sementara baru (misalnya karyawan lupa password). */
     public function resetPassword(Karyawan $karyawan): string
     {
-        $password = Pin::acak();
+        $password = self::passwordSementara();
 
         $user = $karyawan->user;
         $user->password = $password;
@@ -120,13 +119,6 @@ class KaryawanService
 
     public static function passwordSementara(): string
     {
-        // Tanpa karakter yang mirip (0/O, 1/l/I) supaya mudah dibaca dan disalin
-        $huruf = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        $hasil = '';
-        for ($i = 0; $i < 10; $i++) {
-            $hasil .= $huruf[random_int(0, strlen($huruf) - 1)];
-        }
-
-        return $hasil;
+        return Str::password(16, symbols: false);
     }
 }

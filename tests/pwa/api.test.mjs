@@ -13,12 +13,12 @@ test('mengirim token Bearer dan header Accept JSON', async () => {
     assert.equal(diterima.opsi.headers.Accept, 'application/json');
 });
 
-test('login memakai NIP + PIN (JSON) dan tanpa token', async () => {
+test('login memakai NIP + Password (JSON) dan tanpa token', async () => {
     let opsi;
     const api = buatApi({ ambilToken: () => null, fetchFn: async (_u, o) => { opsi = o; return balas(200, { token: 'x' })(); } });
     await api.login('MTU-0123', '482913', 'PWA Android x');
     assert.equal(opsi.headers.Authorization, undefined);
-    assert.deepEqual(JSON.parse(opsi.body), { nip: 'MTU-0123', pin: '482913', device_name: 'PWA Android x' });
+    assert.deepEqual(JSON.parse(opsi.body), { nip: 'MTU-0123', password: '482913', device_name: 'PWA Android x' });
 });
 
 test('standby hanya mengirim kunci; order dan izin mengirim multipart tanpa Content-Type manual', async () => {
@@ -42,12 +42,12 @@ test('standby hanya mengirim kunci; order dan izin mengirim multipart tanpa Cont
     }
 });
 
-test('daftarkan PIN dan riwayat bulanan', async () => {
+test('daftarkan Password dan riwayat bulanan', async () => {
     const dipanggil = [];
     const api = buatApi({ ambilToken: () => 't', fetchFn: async (u, o) => { dipanggil.push({ u, o }); return balas(200, {})(); } });
-    await api.gantiPin({ pin_lama: '482913', pin: '739418', pin_confirmation: '739418' });
+    await api.gantiPassword({ current_password: '482913', password: '739418', password_confirmation: '739418' });
     await api.riwayat('2026-11');
-    assert.equal(dipanggil[0].u, '/api/pin');
+    assert.equal(dipanggil[0].u, '/api/password');
     assert.equal(dipanggil[0].o.method, 'PUT');
     assert.equal(dipanggil[1].u, '/api/aktivitas?bulan=2026-11');
 });
@@ -58,8 +58,8 @@ test('401 dengan token memicu saatTidakSah; tanpa token (login salah) tidak', as
     await assert.rejects(denganToken.me(), (e) => e instanceof ApiError && e.status === 401);
     assert.equal(dipicu, 1);
 
-    const tanpaToken = buatApi({ ambilToken: () => null, saatTidakSah: () => dipicu++, fetchFn: balas(401, { message: 'NIP atau PIN salah.' }) });
-    await assert.rejects(tanpaToken.login('a', 'b', 'c'), /NIP atau PIN salah/);
+    const tanpaToken = buatApi({ ambilToken: () => null, saatTidakSah: () => dipicu++, fetchFn: balas(401, { message: 'NIP atau password salah.' }) });
+    await assert.rejects(tanpaToken.login('a', 'b', 'c'), /NIP atau password salah/);
     assert.equal(dipicu, 1);
 });
 

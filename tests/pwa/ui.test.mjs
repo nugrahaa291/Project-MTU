@@ -41,21 +41,21 @@ function buatDunia({ geo = ['ok'], posisi = 'dekat', mustChange = false, izinLai
 
         if (path === '/login') {
             const b = JSON.parse(body);
-            return b.nip === 'MTU-0123' && b.pin === '482913'
-                ? json(200, { token: 'TOKEN-PALSU', token_type: 'Bearer', must_change_pin: server.mustChange, karyawan: PROFIL })
-                : json(401, { message: 'NIP atau PIN salah, atau akun dinonaktifkan.', kode: 'login_gagal' });
+            return b.nip === 'MTU-0123' && b.password === '482913'
+                ? json(200, { token: 'TOKEN-PALSU', token_type: 'Bearer', must_change_password: server.mustChange, karyawan: PROFIL })
+                : json(401, { message: 'NIP atau password salah, atau akun dinonaktifkan.', kode: 'login_gagal' });
         }
         if (opsi.headers?.Authorization !== 'Bearer TOKEN-PALSU') return json(401, { message: 'Unauthenticated.' });
-        if (path === '/me') return json(200, { must_change_pin: server.mustChange, karyawan: PROFIL });
-        if (path === '/pin') {
+        if (path === '/me') return json(200, { must_change_password: server.mustChange, karyawan: PROFIL });
+        if (path === '/password') {
             const b = JSON.parse(body);
-            if (b.pin_lama !== '482913') return json(422, { message: 'x', errors: { pin_lama: ['PIN lama tidak sesuai.'] } });
+            if (b.current_password !== '482913') return json(422, { message: 'x', errors: { current_password: ['Password lama tidak sesuai.'] } });
             server.mustChange = false;
-            return json(200, { message: 'PIN berhasil didaftarkan.' });
+            return json(200, { message: 'Password berhasil didaftarkan.' });
         }
         if (path === '/aktivitas/ringkasan') {
             return server.mustChange
-                ? json(403, { message: 'Ganti PIN dulu.', kode: 'wajib_ganti_pin' })
+                ? json(403, { message: 'Ganti Password dulu.', kode: 'wajib_ganti_password' })
                 : json(200, { tanggal: '2026-11-14', waktu_server: '2026-11-14T10:32:05+07:00', hari_ini: server.hariIni, izin_lainnya: server.izinLainnya });
         }
         if (path.startsWith('/aktivitas?bulan=')) {
@@ -129,10 +129,10 @@ const teks = (d) => d.body.textContent.replace(/\s+/g, ' ');
 const $ = (d, sel) => d.doc.querySelector(sel);
 const submit = (d, form) => form.dispatchEvent(new d.w.Event('submit', { cancelable: true, bubbles: true }));
 
-async function login(d, nip = 'MTU-0123', pin = '482913') {
+async function login(d, nip = 'MTU-0123', password = '482913') {
     await tunggu(() => $(d, '#nip'), 'form login');
     $(d, '#nip').value = nip;
-    $(d, '#pin').value = pin;
+    $(d, '#password').value = password;
     submit(d, $(d, 'form'));
 }
 async function keBeranda(d, opsi) {
@@ -154,18 +154,18 @@ test('login dengan NIP salah menampilkan pesan dan tidak menyimpan token', { ski
     d.jalan();
     await login(d, 'MTU-0123', '000001');
     await tunggu(() => !$(d, '.galat').classList.contains('hidden'), 'pesan galat');
-    assert.match($(d, '.galat').textContent, /NIP atau PIN salah/);
+    assert.match($(d, '.galat').textContent, /NIP atau password salah/);
     assert.equal(d.w.localStorage.getItem('pt.token'), null);
     d.w.close();
 });
 
-test('login NIP + PIN langsung ke halaman Absen dengan satu tombol utama', { skip: lewati }, async () => {
+test('login NIP + Password langsung ke halaman Absen dengan satu tombol utama', { skip: lewati }, async () => {
     const d = buatDunia();
     await keBeranda(d);
 
     const kirim = JSON.parse(d.server.panggilan.find((c) => c.url === '/api/login').body);
     assert.equal(kirim.nip, 'MTU-0123');
-    assert.equal(kirim.pin, '482913');
+    assert.equal(kirim.password, '482913');
     assert.match(kirim.device_name, /^PWA Desktop [a-z0-9]+$/);
     assert.equal(d.w.localStorage.getItem('pt.token'), 'TOKEN-PALSU');
 
@@ -426,14 +426,14 @@ test('hasil keputusan izin tampil di halaman karyawan: pengganti atau alasan pen
     d.w.close();
 });
 
-/* ----------------------------------------------------------- PIN & sesi lain */
+/* ----------------------------------------------------------- Password & sesi lain */
 
-test('PIN sementara: dipaksa mendaftarkan PIN sendiri sebelum beranda', { skip: lewati }, async () => {
+test('Password sementara: dipaksa mendaftarkan Password sendiri sebelum beranda', { skip: lewati }, async () => {
     const d = buatDunia({ mustChange: true });
     d.jalan();
     await login(d);
-    await tunggu(() => $(d, '#lama'), 'layar daftarkan PIN');
-    assert.match(teks(d.doc), /Daftarkan PIN/);
+    await tunggu(() => $(d, '#lama'), 'layar daftarkan Password');
+    assert.match(teks(d.doc), /Buat password/);
     assert.equal($(d, '#tombol-absen'), null);
 
     const coba = async (baru, ulang) => {
@@ -443,16 +443,16 @@ test('PIN sementara: dipaksa mendaftarkan PIN sendiri sebelum beranda', { skip: 
         submit(d, $(d, 'form'));
         await new Promise((r) => setTimeout(r, 30));
     };
-    const panggilanPin = () => d.server.panggilan.filter((c) => c.url === '/api/pin').length;
+    const panggilanPassword = () => d.server.panggilan.filter((c) => c.url === '/api/password').length;
 
-    for (const [baru, ulang, pola] of [['12345', '12345', /6 digit/], ['111111', '111111', /mudah ditebak/], ['123456', '123456', /mudah ditebak/], ['739418', '739419', /tidak sama/]]) {
+    for (const [baru, ulang, pola] of [['12345', '12345', /8 karakter/], ['aaaaaaaa', 'aaaaaaaa', /huruf dan angka/], ['Rahasia123', 'Berbeda123', /tidak sama/]]) {
         await coba(baru, ulang);
         assert.match($(d, '.galat').textContent, pola);
     }
-    assert.equal(panggilanPin(), 0, 'PIN lemah ditolak di HP sebelum dikirim');
+    assert.equal(panggilanPassword(), 0, 'Password lemah ditolak di HP sebelum dikirim');
 
-    await coba('739418', '739418');
-    await tunggu(() => $(d, '#tombol-absen'), 'beranda setelah PIN didaftarkan');
+    await coba('Rahasia123', 'Rahasia123');
+    await tunggu(() => $(d, '#tombol-absen'), 'beranda setelah Password didaftarkan');
     assert.equal(d.server.mustChange, false);
     d.w.close();
 });

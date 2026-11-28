@@ -11,6 +11,18 @@
             <form method="post" action="{{ route('pelamar.keluar') }}">@csrf<button class="btn btn-outline">Keluar</button></form>
         </div>
     </div>
+    @unless ($pelamar->user_id)
+        <details class="card mb-5 p-5" @if ($errors->has('nip') || $errors->has('password')) open @endif>
+            <summary class="cursor-pointer font-semibold">Hubungkan akun karyawan</summary>
+            <p class="my-3 text-sm">Setelah terhubung, gunakan password karyawan untuk kedua portal. Jika masih memakai PIN, ganti dulu di <a class="underline" href="{{ route('pwa') }}">halaman Absen</a>.</p>
+            <form class="grid items-end gap-3 sm:grid-cols-3" method="post" action="{{ route('pelamar.hubungkan.karyawan') }}">
+                @csrf
+                <x-field name="nip" label="NIP karyawan" autocomplete="username" required />
+                <x-field name="password" type="password" label="Password karyawan" autocomplete="current-password" required />
+                <button class="btn btn-primary">Hubungkan akun</button>
+            </form>
+        </details>
+    @endunless
     <div class="grid gap-4 md:grid-cols-2">
         @forelse ($daftar as $lamaran)
             <article class="card min-w-0 p-5">

@@ -51,8 +51,8 @@ Semua balasan JSON. Kirim header `Accept: application/json`. Setelah login: `Aut
 
 | Method & URL | Keterangan |
 |---|---|
-| `POST /api/login` | body: `email`, `password`, `device_name` -> `token`, `must_change_password`, data karyawan. Token berlaku 30 hari; satu token per nama perangkat |
-| `PUT /api/password` | `password_lama`, `password`, `password_confirmation`. Wajib dipanggil bila `must_change_password = true` |
+| `POST /api/login` | body: `nip`, `password`, `device_name` -> `token`, `must_change_password`, data karyawan. Token berlaku 30 hari; satu token per nama perangkat |
+| `PUT /api/password` | `current_password`, `password`, `password_confirmation`. Wajib dipanggil bila `must_change_password = true` |
 | `GET /api/me` / `POST /api/logout` | profil / keluar |
 | `GET /api/absensi/hari-ini` | koordinat & radius kantor, jam masuk, `bisa_masuk`, `bisa_pulang`, catatan hari ini |
 | `POST /api/absensi/masuk` | multipart: `foto` (jpg/png, maks 5 MB), `latitude`, `longitude`, opsional `akurasi` (meter), `lokasi_palsu` (isMock Android) |
@@ -127,7 +127,7 @@ tabel gaji (tanpa kode di MTU), role enum '0'-'3' (tak jelas artinya).
 
 ## Akun pelamar dan login Google
 
-Pelamar dapat mendaftar di `/pelamar/daftar`. Jalankan `php artisan migrate` untuk menambahkan akun dan relasi kepemilikan lamaran. Di **Lamaran Saya**, pelamar dapat melihat riwayat atau menautkan lamaran lama dengan kode lamaran dan nomor HP saat mendaftar. Setelah diterima, relasi lamaran menghubungkan profil karyawan ke riwayat pelamar. Karyawan menggunakan NIP dan PIN di `/absen`.
+Pelamar dapat mendaftar di `/pelamar/daftar`. Jalankan `php artisan migrate` untuk menambahkan akun dan relasi kepemilikan lamaran. Di **Lamaran Saya**, pelamar dapat melihat riwayat atau menautkan lamaran lama dengan kode lamaran dan nomor HP saat mendaftar. Setelah diterima, relasi lamaran menghubungkan profil karyawan ke riwayat pelamar. Karyawan memakai NIP dan password di `/absen` dan pada pilihan **NIP karyawan** di portal pelamar. PIN lama dapat dipakai sekali di halaman Absen untuk membuat password baru. Jika sudah memiliki akun pelamar, masuk dengan email atau Google lalu pilih **Hubungkan akun karyawan** di Lamaran Saya.
 
 Untuk mengaktifkan Google, buat OAuth client berjenis **Web application** di Google Cloud. Daftarkan URI callback persis seperti yang dipakai aplikasi, misalnya `http://localhost:8000/pelamar/google/callback` saat pengembangan atau URL HTTPS situs saat produksi. Gunakan host yang sama ketika membuka aplikasi dan saat menerima callback. Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `GOOGLE_REDIRECT_URI` melalui konfigurasi server atau file `.env` lokal. Muat ulang cache konfigurasi Laravel setelah mengubahnya. Jika aplikasi OAuth masih dalam mode pengujian, tambahkan akun penguji di pengaturan Google.
 
