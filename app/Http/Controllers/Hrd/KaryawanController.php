@@ -6,6 +6,7 @@ use App\Exceptions\RekrutmenException;
 use App\Http\Controllers\Controller;
 use App\Models\Jabatan;
 use App\Models\Karyawan;
+use App\Models\Lamaran;
 use App\Services\KaryawanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,9 +15,7 @@ use Illuminate\View\View;
 
 class KaryawanController extends Controller
 {
-    public function __construct(private KaryawanService $service)
-    {
-    }
+    public function __construct(private KaryawanService $service) {}
 
     public function index(Request $request): View
     {
@@ -66,7 +65,7 @@ class KaryawanController extends Controller
             'nip.unique' => 'NIP ini sudah dipakai karyawan lain.',
         ]);
 
-        $data['no_hp'] = \App\Models\Lamaran::normalisasiHp($data['no_hp']);
+        $data['no_hp'] = Lamaran::normalisasiHp($data['no_hp']);
 
         try {
             [$karyawan, $password] = $this->service->buat($data);
@@ -78,7 +77,7 @@ class KaryawanController extends Controller
 
         return redirect()->route($rute, $karyawan)
             ->with('success', 'Karyawan ditambahkan.')
-            ->with('pin_sementara', $password);
+            ->with('password_sementara', $password);
     }
 
     public function show(Karyawan $karyawan): View
@@ -117,7 +116,7 @@ class KaryawanController extends Controller
             'nip.regex' => 'NIP hanya boleh berisi huruf, angka, titik, strip, atau garis miring.',
             'nip.unique' => 'NIP ini sudah dipakai karyawan lain.',
         ]);
-        $data['no_hp'] = \App\Models\Lamaran::normalisasiHp($data['no_hp']);
+        $data['no_hp'] = Lamaran::normalisasiHp($data['no_hp']);
 
         $karyawan->update($data);
         $karyawan->user->update(['name' => $data['nama']]);
@@ -143,7 +142,7 @@ class KaryawanController extends Controller
         $rute = $request->routeIs('admin.*') ? 'admin.karyawan.show' : 'hrd.karyawan.show';
 
         return redirect()->route($rute, $karyawan)
-            ->with('success', 'PIN direset. Karyawan wajib mendaftarkan PIN barunya saat login berikutnya.')
-            ->with('pin_sementara', $password);
+            ->with('success', 'Password direset. Karyawan perlu membuat password baru saat login berikutnya.')
+            ->with('password_sementara', $password);
     }
 }

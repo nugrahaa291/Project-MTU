@@ -94,7 +94,7 @@ test('namaPerangkat & ukuranTerskala', () => {
 });
 
 /* ============================ alur baru: Standby / Order / Izin ============================ */
-import { bangunFormIzin, bangunFormOrder, buatKunci, formatKoordinat, pesanPin, pinValid, ringkasKegiatan, validasiLampiran } from '../../public/pwa/lib.js';
+import { bangunFormIzin, bangunFormOrder, buatKunci, formatKoordinat, pesanPassword, ringkasKegiatan, validasiLampiran } from '../../public/pwa/lib.js';
 
 test('buatKunci: format aman untuk server dan selalu unik', () => {
     const kunci = new Set(Array.from({ length: 200 }, () => buatKunci()));
@@ -102,14 +102,11 @@ test('buatKunci: format aman untuk server dan selalu unik', () => {
     for (const k of kunci) assert.match(k, /^[A-Za-z0-9_-]{16,64}$/);
 });
 
-test('pinValid sama dengan aturan server', () => {
-    for (const ok of ['482913', '739418', '102938', '905173']) assert.equal(pinValid(ok), true, ok);
-    for (const buruk of ['', '12345', '1234567', 'abcdef', '000000', '111111', '123456', '234567', '567890', '890123', '012345', '654321', '987654', '121212', '123123', '112112']) {
-        assert.equal(pinValid(buruk), false, `"${buruk}" harus ditolak`);
+test('password memakai huruf dan angka dan maksimal 72 byte', () => {
+    assert.equal(pesanPassword('Rahasia123'), null);
+    for (const buruk of ['482913', 'tanpaangka', '12345678', 'a1' + 'é'.repeat(36)]) {
+        assert.ok(pesanPassword(buruk));
     }
-    assert.match(pesanPin('12345'), /6 digit/);
-    assert.match(pesanPin('123456'), /mudah ditebak/);
-    assert.equal(pesanPin('739418'), null);
 });
 
 test('validasiLampiran: hanya foto/PDF, tidak kosong, maksimal 5 MB', () => {

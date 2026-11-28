@@ -1,10 +1,10 @@
 // Aplikasi absensi (PWA). Vanilla JS tanpa library: tidak ada skrip pihak ketiga yang bisa mengakses token.
-// Alur: login (NIP + PIN) -> tombol Absen -> pilih Standby / Order / Izin.
+// Alur: login (NIP + Password) -> tombol Absen -> pilih Standby / Order / Izin.
 import { buatApi } from './api.js';
 import {
     bangunFormIzin, bangunFormOrder, buatKunci, bulanSekarang, formatJam, formatJamLengkap, formatKoordinat,
     formatTanggalPanjang, formatTanggalPendek, geserBulan, hitungOffset, namaBulan, namaPerangkat, pesanGeolokasi,
-    pesanPin, ringkasKegiatan, ukuranTerskala, validasiLampiran, warnaStatus,
+    pesanPassword, ringkasKegiatan, ukuranTerskala, validasiLampiran, warnaStatus,
 } from './lib.js';
 
 const KUNCI_TOKEN = 'pt.token';
@@ -104,7 +104,7 @@ async function masukKeUtama() {
     try {
         await muatRingkasan();
     } catch (e) {
-        if (e.kode === 'wajib_ganti_pin') return (S.layar = 'ganti'), render();
+        if (e.kode === 'wajib_ganti_password') return (S.layar = 'ganti'), render();
         if (e.kode === 'akun_nonaktif') return keluarLokal(e.message);
         toast(e.message, 'err');
     }
@@ -115,7 +115,7 @@ async function masukKeUtama() {
 function layarLogin() {
     const galat = h('div', { class: 'galat hidden', role: 'alert' });
     const nip = h('input', { type: 'text', id: 'nip', autocomplete: 'username', required: true, autocapitalize: 'characters', spellcheck: 'false' });
-    const pin = h('input', { type: 'password', id: 'pin', autocomplete: 'current-password', required: true, inputmode: 'numeric', maxlength: '12' });
+    const password = h('input', { type: 'password', id: 'password', autocomplete: 'current-password', required: true });
     const tombol = h('button', { class: 'tombol', type: 'submit' }, 'Masuk');
 
     const form = h('form', {
@@ -123,18 +123,18 @@ function layarLogin() {
         onsubmit: async (ev) => {
             ev.preventDefault();
             galat.classList.add('hidden');
-            if (!nip.value.trim() || !pin.value) {
-                galat.textContent = 'NIP dan PIN wajib diisi.';
+            if (!nip.value.trim() || !password.value) {
+                galat.textContent = 'NIP dan password wajib diisi.';
                 return galat.classList.remove('hidden');
             }
             tombol.disabled = true;
             tombol.textContent = 'Memeriksa...';
             try {
-                const res = await api.login(nip.value.trim(), pin.value, namaPerangkat(navigator.userAgent, idPerangkat()));
+                const res = await api.login(nip.value.trim(), password.value, namaPerangkat(navigator.userAgent, idPerangkat()));
                 simpan.set(KUNCI_TOKEN, res.token);
                 S.profil = res.karyawan;
                 S.notice = '';
-                if (res.must_change_pin) {
+                if (res.must_change_password) {
                     S.layar = 'ganti';
                     return render();
                 }
@@ -146,40 +146,40 @@ function layarLogin() {
                 tombol.textContent = 'Masuk';
             }
         },
-    }, h('label', { for: 'nip' }, 'NIP'), nip, h('label', { for: 'pin' }, 'PIN'), pin, tombol, galat);
+    }, h('label', { for: 'nip' }, 'NIP'), nip, h('label', { for: 'password' }, 'Password'), password, tombol, galat);
 
     return h('div', { class: 'layar-gelap' },
         h('div', { class: 'merek' }, 'MTU', h('span', {}, '.')),
         h('div', { class: 'kartu' },
             h('h1', {}, 'Masuk'),
-            h('p', { class: 'muted' }, 'Gunakan NIP dan PIN Anda. Baru pertama kali? Masuk dengan PIN sementara dari HRD, lalu daftarkan PIN Anda sendiri.'),
+            h('p', { class: 'muted' }, 'Gunakan NIP dan password. Jika masih memakai PIN lama, masukkan PIN itu sekali untuk membuat password baru.'),
             S.notice ? h('div', { class: 'info' }, S.notice) : null,
             form),
     );
 }
 
-/* ----------------------------------------------------- layar: daftarkan PIN */
+/* ----------------------------------------------------- layar: daftarkan Password */
 function layarGanti() {
     const galat = h('div', { class: 'galat hidden', role: 'alert' });
-    const lama = h('input', { type: 'password', id: 'lama', autocomplete: 'current-password', required: true, inputmode: 'numeric', maxlength: '12' });
-    const baru = h('input', { type: 'password', id: 'baru', autocomplete: 'new-password', required: true, inputmode: 'numeric', maxlength: '6' });
-    const ulang = h('input', { type: 'password', id: 'ulang', autocomplete: 'new-password', required: true, inputmode: 'numeric', maxlength: '6' });
-    const tombol = h('button', { class: 'tombol', type: 'submit' }, 'Simpan PIN');
+    const lama = h('input', { type: 'password', id: 'lama', autocomplete: 'current-password', required: true });
+    const baru = h('input', { type: 'password', id: 'baru', autocomplete: 'new-password', required: true, maxlength: '72' });
+    const ulang = h('input', { type: 'password', id: 'ulang', autocomplete: 'new-password', required: true, maxlength: '72' });
+    const tombol = h('button', { class: 'tombol', type: 'submit' }, 'Simpan Password');
 
     const form = h('form', {
         novalidate: true,
         onsubmit: async (ev) => {
             ev.preventDefault();
             galat.classList.add('hidden');
-            const salah = pesanPin(baru.value) || (baru.value !== ulang.value ? 'Konfirmasi PIN tidak sama.' : null);
+            const salah = pesanPassword(baru.value) || (baru.value !== ulang.value ? 'Konfirmasi Password tidak sama.' : null);
             if (salah) {
                 galat.textContent = salah;
                 return galat.classList.remove('hidden');
             }
             tombol.disabled = true;
             try {
-                await api.gantiPin({ pin_lama: lama.value, pin: baru.value, pin_confirmation: ulang.value });
-                toast('PIN berhasil didaftarkan.', 'ok');
+                await api.gantiPassword({ current_password: lama.value, password: baru.value, password_confirmation: ulang.value });
+                toast('Password berhasil didaftarkan.', 'ok');
                 await masukKeUtama();
             } catch (e) {
                 galat.textContent = e.message;
@@ -188,16 +188,16 @@ function layarGanti() {
             }
         },
     },
-    h('label', { for: 'lama' }, 'PIN saat ini (PIN sementara)'), lama,
-    h('label', { for: 'baru' }, 'PIN baru (6 digit angka)'), baru,
-    h('label', { for: 'ulang' }, 'Ulangi PIN baru'), ulang,
+    h('label', { for: 'lama' }, 'Password saat ini atau PIN lama'), lama,
+    h('label', { for: 'baru' }, 'Password baru'), baru,
+    h('label', { for: 'ulang' }, 'Ulangi Password baru'), ulang,
     tombol, galat);
 
     return h('div', { class: 'layar-gelap' },
         h('div', { class: 'merek' }, 'MTU', h('span', {}, '.')),
         h('div', { class: 'kartu' },
-            h('h1', {}, 'Daftarkan PIN'),
-            h('p', { class: 'muted' }, 'Buat PIN 6 digit milik Anda sendiri. PIN ini dipakai untuk login berikutnya bersama NIP. Jangan berupa angka berulang atau berurutan.'),
+            h('h1', {}, 'Buat password'),
+            h('p', { class: 'muted' }, 'Gunakan minimal 8 karakter dengan huruf dan angka. Password ini berlaku untuk Absen dan portal Pelamar.'),
             form,
             h('button', { class: 'tombol garis kecil', type: 'button', onclick: () => keluarLokal() }, 'Keluar')),
     );
@@ -313,7 +313,7 @@ function tabAkun() {
             ? h('div', { class: 'kartu' }, h('strong', {}, 'Pasang di iPhone'), h('p', { class: 'muted' }, 'Ketuk tombol Bagikan di Safari, lalu pilih "Tambah ke Layar Utama".'))
             : null,
         h('div', { class: 'kartu' },
-            h('button', { class: 'tombol garis', type: 'button', onclick: () => { S.layar = 'ganti'; render(); } }, 'Ganti PIN'),
+            h('button', { class: 'tombol garis', type: 'button', onclick: () => { S.layar = 'ganti'; render(); } }, 'Ganti Password'),
             h('button', { class: 'tombol gelap', type: 'button', onclick: async () => { try { await api.logout(); } catch { /* tetap keluar */ } keluarLokal(); } }, 'Keluar')),
     );
 }
@@ -394,7 +394,7 @@ async function kirim({ tombol, galat, jalankan }) {
         render();
     } catch (e) {
         S.mengirim = false;
-        if (e.kode === 'wajib_ganti_pin') { tutupSheet(true); S.layar = 'ganti'; return render(); }
+        if (e.kode === 'wajib_ganti_password') { tutupSheet(true); S.layar = 'ganti'; return render(); }
         if (e.kode === 'akun_nonaktif') return keluarLokal(e.message);
         if (!sheet) return;
         galat.textContent = e.message;
@@ -739,7 +739,7 @@ async function mulai() {
     try {
         const me = await api.me();
         S.profil = me.karyawan;
-        if (me.must_change_pin) {
+        if (me.must_change_password) {
             S.layar = 'ganti';
             return render();
         }

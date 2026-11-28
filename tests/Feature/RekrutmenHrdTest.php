@@ -7,7 +7,6 @@ use App\Enums\StatusLamaran;
 use App\Models\Karyawan;
 use App\Models\Pelamar;
 use App\Models\User;
-use App\Support\Pin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -88,7 +87,7 @@ class RekrutmenHrdTest extends TestCase
         ]);
 
         $karyawan = Karyawan::with('user')->firstOrFail();
-        $response->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('pin_sementara');
+        $response->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('password_sementara');
 
         $this->assertSame(StatusLamaran::Diterima, $lamaran->fresh()->status);
         $this->assertSame($hrd->id, $lamaran->fresh()->diperiksa_oleh);
@@ -107,10 +106,9 @@ class RekrutmenHrdTest extends TestCase
         $this->assertTrue($user->must_change_password);
         $this->assertSame('dewi@example.com', $user->email);
 
-        // PIN sementara benar-benar cocok dengan hash dan tidak tersimpan polos di database
-        $password = session('pin_sementara');
-        $this->assertMatchesRegularExpression('/^\d{6}$/', $password);              // PIN sementara 6 digit
-        $this->assertTrue(Pin::valid($password));
+        // Password sementara benar-benar cocok dengan hash dan tidak tersimpan polos di database
+        $password = session('password_sementara');
+        $this->assertMatchesRegularExpression('/^[a-zA-Z0-9]{16}$/', $password);
         $this->assertTrue(Hash::check($password, $user->password));
         $this->assertNotSame($password, $user->getRawOriginal('password'));
     }

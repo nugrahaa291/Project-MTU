@@ -2,9 +2,9 @@
 
 namespace Tests\Concerns;
 
-use App\Enums\Role;
 use App\Enums\StatusLamaran;
 use App\Models\Jabatan;
+use App\Models\Karyawan;
 use App\Models\Lamaran;
 use App\Models\Lowongan;
 use App\Models\User;
@@ -17,8 +17,9 @@ trait SiapkanData
     {
         return User::factory()->admin()->create($override);
     }
-    /** PIN yang dipakai semua karyawan uji (lolos aturan PIN: bukan angka berulang/berurutan). */
-    public const PIN_KARYAWAN = '482913';
+
+    /** Password yang dipakai semua karyawan uji. */
+    public const PASSWORD_KARYAWAN = 'Rahasia482913';
 
     protected function hrd(): User
     {
@@ -97,8 +98,8 @@ trait SiapkanData
         ]);
     }
 
-    /** Karyawan aktif lengkap dengan akun login (login: NIP + PIN "482913"). */
-    protected function karyawan(array $override = [], bool $wajibGantiPassword = false): \App\Models\Karyawan
+    /** Karyawan aktif lengkap dengan akun login (login: NIP + Password "482913"). */
+    protected function karyawan(array $override = [], bool $wajibGantiPassword = false): Karyawan
     {
         static $n = 0;
         $n++;
@@ -113,7 +114,7 @@ trait SiapkanData
             ...$override,
         ]);
 
-        $karyawan->user->password = self::PIN_KARYAWAN;
+        $karyawan->user->password = self::PASSWORD_KARYAWAN;
         $karyawan->user->forceFill(['must_change_password' => $wajibGantiPassword])->save();
 
         return $karyawan->refresh();

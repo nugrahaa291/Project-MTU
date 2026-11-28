@@ -58,8 +58,7 @@ return [
     'attributes' => [
         'email' => 'Email',
         'nip' => 'NIP',
-        'pin' => 'PIN',
-        'pin_lama' => 'PIN lama',
+        'current_password' => 'Password saat ini',
         'tujuan' => 'Lokasi tujuan',
         'kategori' => 'Kategori izin',
         'kunci' => 'Kunci permintaan',

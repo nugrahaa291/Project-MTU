@@ -10,10 +10,12 @@ use App\Models\KegiatanAbsensi;
 use App\Support\WatermarkFoto;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
 use Tests\Concerns\SiapkanData;
 use Tests\Support\WatermarkPalsu;
 use Tests\TestCase;
@@ -40,7 +42,7 @@ class KegiatanAbsensiTest extends TestCase
         Storage::fake('local');
         Cache::flush();
 
-        $this->watermark = new WatermarkPalsu();
+        $this->watermark = new WatermarkPalsu;
         $this->app->instance(WatermarkFoto::class, $this->watermark);
 
         $this->balasGeocoder = fn () => Http::response([
@@ -55,7 +57,7 @@ class KegiatanAbsensiTest extends TestCase
     {
         $k ??= $this->karyawan();
         $this->app['auth']->forgetGuards();
-        $token = $this->postJson('/api/login', ['nip' => $k->nip, 'pin' => self::PIN_KARYAWAN, 'device_name' => 'hp-'.$k->id])
+        $token = $this->postJson('/api/login', ['nip' => $k->nip, 'password' => self::PASSWORD_KARYAWAN, 'device_name' => 'hp-'.$k->id])
             ->assertOk()->json('token');
 
         return ['Authorization' => "Bearer $token"];
@@ -84,7 +86,7 @@ class KegiatanAbsensiTest extends TestCase
     {
         $this->postJson('/api/aktivitas/standby', ['kunci' => $this->kunci()])->assertUnauthorized();
 
-        \Laravel\Sanctum\Sanctum::actingAs($this->hrd());
+        Sanctum::actingAs($this->hrd());
         $this->postJson('/api/aktivitas/standby', ['kunci' => $this->kunci()])->assertForbidden();
         $this->assertSame(0, KegiatanAbsensi::count());
     }
@@ -200,7 +202,7 @@ class KegiatanAbsensiTest extends TestCase
 
     public function test_geocoder_mati_atau_timeout_tidak_menggagalkan_order(): void
     {
-        $this->balasGeocoder = fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout');
+        $this->balasGeocoder = fn () => throw new ConnectionException('timeout');
 
         $this->kirim('order', $this->masukApi(), $this->dataOrder())->assertCreated();
         $this->assertSame('-6.301993, 107.305442 (±12 m)', $this->watermark->panggilan[0]['lokasi']);

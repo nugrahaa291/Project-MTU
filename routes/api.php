@@ -11,15 +11,14 @@ use Illuminate\Support\Facades\Route;
 | Autentikasi memakai token Bearer: Authorization: Bearer <token>
 */
 
-// Karyawan login dengan NIP + PIN
+// Karyawan login dengan NIP + password
 Route::post('/login', [Api\AuthController::class, 'login'])->middleware('throttle:30,1');
 
 Route::middleware(['auth:sanctum', 'akun.aktif', 'role:karyawan'])->group(function () {
     Route::post('/logout', [Api\AuthController::class, 'logout']);
     Route::get('/me', [Api\AuthController::class, 'me']);
 
-    // Boleh diakses walau PIN masih sementara (justru dipakai untuk mendaftarkan PIN sendiri)
-    Route::put('/pin', [Api\AuthController::class, 'gantiPin'])->name('api.pin');
+    Route::put('/password', [Api\AuthController::class, 'gantiPassword'])->middleware('throttle:10,1')->name('api.password');
 
     Route::middleware('password.diganti')->group(function () {
         // ---- Alur absensi BARU: Standby / Order / Izin ----

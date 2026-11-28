@@ -46,11 +46,11 @@ export function buatApi({ fetchFn = (...a) => fetch(...a), ambilToken, saatTidak
     }
 
     return {
-        // Karyawan login dengan NIP + PIN
-        login: (nip, pin, deviceName) => minta('POST', '/login', { json: { nip, pin, device_name: deviceName } }),
+        // Karyawan login dengan NIP + Password
+        login: (nip, password, deviceName) => minta('POST', '/login', { json: { nip, password, device_name: deviceName } }),
         logout: () => minta('POST', '/logout'),
         me: () => minta('GET', '/me'),
-        gantiPin: (payload) => minta('PUT', '/pin', { json: payload }),
+        gantiPassword: (payload) => minta('PUT', '/password', { json: payload }),
         ringkasan: () => minta('GET', '/aktivitas/ringkasan'),
         standby: (kunci) => minta('POST', '/aktivitas/standby', { json: { kunci } }),
         order: (form) => minta('POST', '/aktivitas/order', { form }),
