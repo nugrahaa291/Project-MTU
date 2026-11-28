@@ -83,6 +83,9 @@ class GooglePelamarController extends AkunPelamarController
             return $error('Akun sudah terdaftar. Silakan masuk kembali.');
         }
         Auth::guard('pelamar')->login($pelamar);
+        
+        // Auto-link lamaran lama berdasarkan email
+        $this->autoLinkLamaran($pelamar);
 
         return $this->selesai($request);
     }

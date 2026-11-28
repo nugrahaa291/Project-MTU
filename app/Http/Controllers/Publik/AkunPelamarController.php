@@ -41,6 +41,9 @@ class AkunPelamarController extends Controller
             return back()->withErrors(['email' => 'Email sudah digunakan.']);
         }
         Auth::guard('pelamar')->login($pelamar);
+        
+        // Auto-link lamaran lama berdasarkan email
+        $this->autoLinkLamaran($pelamar);
 
         return $this->selesai($request);
     }
@@ -48,35 +51,62 @@ class AkunPelamarController extends Controller
     public function masuk(Request $request, LoginKaryawan $login): RedirectResponse
     {
         abort_if($request->user('pelamar'), 403);
-        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
-        $data['email'] = Str::lower(trim($data['email']));
-        $profil = Pelamar::where('email', $data['email'])->first();
-        if ($profil?->user_id) {
-            $nip = $profil->user?->karyawan?->nip;
-            if (! $nip) {
-                return back()->withErrors(['email' => 'Akun karyawan tidak aktif.']);
+        
+        $data = $request->validate([
+            'identifier' => 'required|string|max:150',
+            'password' => 'required|string'
+        ]);
+        
+        $identifier = trim($data['identifier']);
+        
+        // Cek apakah input berupa email atau NIP
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        
+        if ($isEmail) {
+            // Login dengan email (pelamar atau karyawan yang punya profil pelamar)
+            $email = Str::lower($identifier);
+            $profil = Pelamar::where('email', $email)->first();
+            
+            if ($profil?->user_id) {
+                // Pelamar yang terhubung dengan karyawan
+                $nip = $profil->user?->karyawan?->nip;
+                if (! $nip) {
+                    return back()->withErrors(['identifier' => 'Akun karyawan tidak aktif.']);
+                }
+                try {
+                    $user = $login->verifikasi($nip, $data['password'], $request->ip());
+                } catch (ValidationException $e) {
+                    return back()->withErrors(['identifier' => $e->errors()['nip'][0]])->onlyInput('identifier');
+                }
+                if ($user->id !== $profil->user_id || $user->must_change_password) {
+                    return back()->withErrors(['identifier' => 'Perbarui password melalui halaman Absen.']);
+                }
+                Auth::guard('pelamar')->login($profil->setRelation('user', $user));
+            } elseif (! Auth::guard('pelamar')->attempt(['email' => $email, 'password' => $data['password'], 'user_id' => null])) {
+                return back()->withErrors(['identifier' => 'Email atau password tidak cocok.'])->onlyInput('identifier');
             }
+        } else {
+            // Login dengan NIP (karyawan)
             try {
-                $user = $login->verifikasi($nip, $data['password'], $request->ip());
+                $user = $login->verifikasi($identifier, $data['password'], $request->ip());
             } catch (ValidationException $e) {
-                return back()->withErrors(['email' => $e->errors()['nip'][0]])->onlyInput('email');
+                return back()->withErrors(['identifier' => 'NIP atau password tidak cocok.'])->onlyInput('identifier');
             }
-            if ($user->id !== $profil->user_id || $user->must_change_password) {
-                return back()->withErrors(['email' => 'Perbarui password melalui halaman Absen.']);
+            
+            if ($user->must_change_password) {
+                return back()->withErrors(['identifier' => 'Masuk ke halaman Absen dengan NIP dan password saat ini, lalu buat password baru.']);
             }
-            Auth::guard('pelamar')->login($profil->setRelation('user', $user));
-        } elseif (! Auth::guard('pelamar')->attempt([...$data, 'user_id' => null])) {
-            return back()->withErrors(['email' => 'Email atau password tidak cocok.'])->onlyInput('email');
+            
+            try {
+                $pelamar = $login->profilPelamar($user, null);
+            } catch (UniqueConstraintViolationException) {
+                return back()->withErrors(['identifier' => 'Profil sudah terdaftar. Silakan masuk kembali.']);
+            }
+            
+            Auth::guard('pelamar')->login($pelamar);
         }
 
         return $this->selesai($request);
-    }
-
-    public function masukKaryawan(Request $request, LoginKaryawan $login): RedirectResponse
-    {
-        abort_if($request->user('pelamar'), 403);
-
-        return $this->gunakanAkunKaryawan($request, $login, null);
     }
 
     public function hubungkanKaryawan(Request $request, LoginKaryawan $login): RedirectResponse
@@ -117,9 +147,27 @@ class AkunPelamarController extends Controller
             $request->session()->put('pelamar.sidik', $sidik);
         }
         $request->session()->regenerate();
-        $lowongan = $request->session()->pull('pelamar.lowongan');
+        
+        // Auto-link lamaran lama berdasarkan email (untuk login pertama kali)
+        $this->autoLinkLamaran($pelamar);
+        
+        // Redirect ke halaman lowongan, bukan langsung ke form lamaran
+        return redirect()->route('lowongan.index');
+    }
 
-        return $lowongan ? redirect()->route('lamaran.create', $lowongan) : redirect()->route('pelamar.riwayat');
+    /**
+     * Auto-link lamaran lama yang belum terhubung berdasarkan email
+     */
+    protected function autoLinkLamaran(Pelamar $pelamar): void
+    {
+        try {
+            Lamaran::whereNull('pelamar_id')
+                ->where('email', $pelamar->email)
+                ->update(['pelamar_id' => $pelamar->id]);
+        } catch (\Exception $e) {
+            // Silent fail - jangan ganggu proses login/daftar
+            // Log bisa ditambahkan di sini kalau perlu
+        }
     }
 
     public function riwayat(Request $request): View
@@ -128,20 +176,6 @@ class AkunPelamarController extends Controller
             'pelamar' => $request->user('pelamar'),
             'daftar' => $request->user('pelamar')->lamaran()->with('lowongan')->latest()->paginate(12),
         ]);
-    }
-
-    public function tautkanLamaran(Request $request): RedirectResponse
-    {
-        $data = $request->validate(['kode' => 'required|string|max:20', 'no_hp' => 'required|string|max:20']);
-        try {
-            $jumlah = Lamaran::whereNull('pelamar_id')->where('kode', strtoupper(trim($data['kode'])))
-                ->where('no_hp', Lamaran::normalisasiHp($data['no_hp']))
-                ->update(['pelamar_id' => $request->user('pelamar')->id]);
-        } catch (UniqueConstraintViolationException) {
-            $jumlah = 0;
-        }
-
-        return back()->with($jumlah ? 'success' : 'error', $jumlah ? 'Lamaran berhasil ditautkan.' : 'Lamaran tidak dapat ditautkan. Periksa kode dan nomor HP.');
     }
 
     public function keluar(Request $request): RedirectResponse

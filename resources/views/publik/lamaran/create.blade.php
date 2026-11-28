@@ -76,7 +76,14 @@
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <x-field name="tempat_lahir" label="Tempat Lahir" required />
-                        <x-tanggal name="tanggal_lahir" label="Tanggal Lahir" :max="now()->subYears(17)->toDateString()" :tahun-min="now()->year - 70" required />
+                        <x-tanggal 
+                            name="tanggal_lahir" 
+                            label="Tanggal Lahir" 
+                            :max="now()->subYears($minimalUsia)->toDateString()" 
+                            :tahun-min="now()->year - 70" 
+                            :hint="'Minimal usia ' . $minimalUsia . ' tahun'"
+                            required 
+                        />
                     </div>
                 </div>
 

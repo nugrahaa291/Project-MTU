@@ -25,6 +25,7 @@ class PengaturanController extends Controller
             'jam_masuk_selesai' => Pengaturan::ambil('jam_masuk_selesai', '08:30'),
             'jam_pulang_mulai' => Pengaturan::ambil('jam_pulang_mulai', '17:00'),
             'min_driver_aktif' => Pengaturan::ambil('min_driver_aktif', '2'),
+            'rekrutmen_minimal_usia' => Pengaturan::ambil('rekrutmen_minimal_usia', '20'),
         ];
 
         return view('admin.pengaturan', compact('pengaturan'));
@@ -44,15 +45,18 @@ class PengaturanController extends Controller
             'jam_masuk_selesai' => ['required', 'date_format:H:i', 'after:jam_masuk_mulai'],
             'jam_pulang_mulai' => ['required', 'date_format:H:i', 'after:jam_masuk_selesai'],
             'min_driver_aktif' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'rekrutmen_minimal_usia' => ['required', 'integer', 'min:17', 'max:30'],
         ], [
             'jam_masuk_selesai.after' => 'Jam batas akhir masuk harus setelah jam mulai masuk.',
             'jam_pulang_mulai.after' => 'Jam pulang harus setelah jam masuk selesai.',
         ]);
 
         foreach ($data as $kunci => $nilai) {
-            $kategori = in_array($kunci, ['toleransi_terlambat_menit', 'jam_masuk_mulai', 'jam_masuk_selesai', 'jam_pulang_mulai', 'min_driver_aktif'])
-                ? 'absensi'
-                : 'umum';
+            $kategori = match (true) {
+                in_array($kunci, ['toleransi_terlambat_menit', 'jam_masuk_mulai', 'jam_masuk_selesai', 'jam_pulang_mulai', 'min_driver_aktif']) => 'absensi',
+                $kunci === 'rekrutmen_minimal_usia' => 'rekrutmen',
+                default => 'umum',
+            };
 
             Pengaturan::simpan($kunci, (string) $nilai, $kategori);
         }

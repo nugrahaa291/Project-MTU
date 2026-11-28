@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLamaranRequest;
 use App\Models\Lamaran;
 use App\Models\Lowongan;
+use App\Models\Pengaturan;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,8 +30,9 @@ class LamaranController extends Controller
         }
 
         $lowongan->load('jabatan');
+        $minimalUsia = (int) Pengaturan::ambil('rekrutmen_minimal_usia', '17');
 
-        return view('publik.lamaran.create', compact('lowongan'));
+        return view('publik.lamaran.create', compact('lowongan', 'minimalUsia'));
     }
 
     public function store(StoreLamaranRequest $request, Lowongan $lowongan): RedirectResponse|JsonResponse

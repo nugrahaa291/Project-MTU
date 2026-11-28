@@ -63,6 +63,24 @@
                 </div>
             </div>
 
+            <div>
+                <h3 class="text-md font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4">Aturan Rekrutmen & Lamaran</h3>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <x-field 
+                            name="rekrutmen_minimal_usia" 
+                            label="Minimal Usia Pelamar (Tahun)" 
+                            type="number"
+                            min="17"
+                            max="30"
+                            :value="$pengaturan['rekrutmen_minimal_usia'] ?? '20'"
+                            required
+                        />
+                        <p class="text-[11px] text-gray-500 mt-1">Pelamar dengan usia di bawah batas ini tidak dapat mengisi form lamaran.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="rounded-lg bg-blue-50 border border-blue-200 p-4 text-xs text-blue-900 leading-relaxed">
                 <span class="font-bold">Keamanan Konfigurasi:</span> Kredensial sensitif seperti <code>APP_KEY</code>, token enkripsi sesi, dan kata sandi basis data MySQL dikelola eksklusif melalui berkas <code>.env</code> server dan tidak pernah diekspos melalui form web demi menjaga integritas sistem.
             </div>

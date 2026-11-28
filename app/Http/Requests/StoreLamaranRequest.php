@@ -36,7 +36,11 @@ class StoreLamaranRequest extends FormRequest
             'no_hp' => ['required', 'regex:/^(\+62|62|0)8[0-9]{8,12}$/'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'tempat_lahir' => ['required', 'string', 'max:100'],
-            'tanggal_lahir' => ['required', 'date', 'before:-17 years'],
+            'tanggal_lahir' => [
+                'required', 
+                'date', 
+                'before:-' . (int) \App\Models\Pengaturan::ambil('rekrutmen_minimal_usia', '17') . ' years'
+            ],
             'alamat' => ['required', 'string', 'max:500'],
             'pendidikan' => ['required', Rule::in(Lamaran::PENDIDIKAN)],
         ];
@@ -86,11 +90,13 @@ class StoreLamaranRequest extends FormRequest
 
     public function messages(): array
     {
+        $minimalUsia = (int) \App\Models\Pengaturan::ambil('rekrutmen_minimal_usia', '17');
+        
         $pesan = [
             'nik.digits' => 'NIK harus 16 digit angka.',
             'nik.unique' => 'NIK ini sudah pernah melamar pada lowongan tersebut.',
             'no_hp.regex' => 'Nomor HP tidak valid. Contoh: 081234567890.',
-            'tanggal_lahir.before' => 'Usia pelamar minimal 17 tahun.',
+            'tanggal_lahir.before' => "Usia pelamar minimal {$minimalUsia} tahun.",
             'jenis_pendukung.required' => 'Pilih salah satu: ijazah, akte lahir, atau buku nikah.',
             'jenis_pendukung.in' => 'Pilihan dokumen pendukung tidak valid.',
             'dokumen_pendukung.required' => 'Unggah dokumen pendukung yang Anda pilih.',
