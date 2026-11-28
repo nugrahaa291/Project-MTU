@@ -17,7 +17,7 @@
             @php
                 $tahap = [
                     ['Diajukan', true],
-                    ['Seleksi', in_array($lamaran->status->value, ['seleksi', 'diterima'])],
+                    ['Seleksi', $lamaran->lolos_berkas_pada || in_array($lamaran->status->value, ['seleksi', 'diterima'])],
                     [$lamaran->status->value === 'ditolak' ? 'Ditolak' : 'Diterima', in_array($lamaran->status->value, ['diterima', 'ditolak'])],
                 ];
             @endphp
@@ -28,7 +28,7 @@
                         <h2 class="text-lg font-bold">{{ $lamaran->nama }}</h2>
                         <p class="text-sm text-gray-600">{{ $lamaran->lowongan->judul }}</p>
                     </div>
-                    <x-badge :warna="$lamaran->status->warna()">{{ $lamaran->status->label() }}</x-badge>
+                    <x-badge :warna="$lamaran->status->warna()">{{ $lamaran->statusPublik() }}</x-badge>
                 </div>
 
                 <ol class="mt-6 flex items-center">

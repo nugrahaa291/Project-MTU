@@ -4,6 +4,7 @@
 @section('content')
     @php
         $status = $lamaran->status;
+        $bisaPeriksa = ! $lamaran->lolos_berkas_pada && $status->bisaPindahKe(\App\Enums\StatusLamaran::Ditolak);
         $rute = request()->routeIs('admin.*') ? 'admin' : 'hrd';
     @endphp
     <a href="{{ route($rute.'.lamaran.index') }}" class="mb-3 inline-block text-sm text-gray-500 hover:text-brand">&larr; Daftar lamaran</a>
@@ -37,23 +38,15 @@
                 </dl>
             </div>
 
-            <div class="card p-6">
-                <h3 class="mb-3 font-bold">Berkas</h3>
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($lamaran->berkasTampil() as $kolom => $label)
-                        @if ($lamaran->{$kolom})
-                            <a href="{{ route($rute.'.lamaran.dokumen', [$lamaran, $kolom]) }}" target="_blank" class="btn btn-outline btn-sm">{{ $label }} &nearr;</a>
-                        @else
-                            <span class="rounded-md border border-dashed border-gray-300 px-3 py-1.5 text-xs text-gray-400">{{ $label }} (tidak ada)</span>
-                        @endif
-                    @endforeach
-                </div>
-            </div>
+            @include('hrd.lamaran.pemeriksaan')
+            @if ($lamaran->lolos_berkas_pada)
+                @include('hrd.lamaran.penilaian')
+            @endif
 
             @if ($lamaran->catatan || $lamaran->diputuskan_pada)
                 <div class="card p-6 text-sm">
-                    <h3 class="mb-1 font-bold">Keputusan</h3>
-                    <p class="text-gray-500">{{ $lamaran->diputuskan_pada?->translatedFormat('d F Y, H:i') }}</p>
+                    <h3 class="mb-1 font-bold">Keputusan akhir · {{ $status->label() }}</h3>
+                    <p class="text-gray-500">{{ $lamaran->pengambilKeputusan?->name }} {{ $lamaran->diputuskan_pada?->translatedFormat('d F Y, H:i') }}</p>
                     <p class="mt-1 whitespace-pre-line">{{ $lamaran->catatan ?: '-' }}</p>
                 </div>
             @endif
@@ -66,31 +59,23 @@
                 <p class="text-2xl font-bold">{{ $lamaran->lowongan->diterima_count }} / {{ $lamaran->lowongan->kuota }}</p>
             </div>
 
-            @if ($status === \App\Enums\StatusLamaran::Diajukan)
-                <form method="POST" action="{{ route($rute.'.lamaran.proses', $lamaran) }}" class="card p-5">
-                    @csrf
-                    <p class="mb-3 text-sm text-gray-600">Berkas sudah ditinjau dan layak lanjut ke tahap seleksi</p>
-                    <button class="btn btn-primary w-full">Proses ke Seleksi</button>
-                </form>
-            @endif
-
-            @if ($status === \App\Enums\StatusLamaran::Seleksi)
+            @if ($status === \App\Enums\StatusLamaran::Seleksi && $lamaran->dinilai_pada && $lamaran->rekomendasi_interview === 'lanjut')
                 <form method="POST" action="{{ route($rute.'.lamaran.terima', $lamaran) }}" class="card space-y-3 border-green-200 p-5" data-konfirmasi="Terima pelamar ini dan buat akun karyawan?">
                     @csrf
-                    <h3 class="font-bold text-green-700">Terima (Hired)</h3>
+                    <h3 class="font-bold text-green-700">Keputusan penerimaan</h3>
                     <p class="text-xs text-gray-500">Sistem otomatis membuat akun karyawan dengan PIN sementara.</p>
                     <x-field name="email" label="Email akun" type="email" :value="$lamaran->email" required />
                     <x-field name="tanggal_masuk" label="Tanggal masuk kerja" type="date" :value="now()->toDateString()" required />
-                    <x-field name="catatan" label="Catatan (opsional)" as="textarea" rows="2" />
-                    <button class="btn w-full bg-green-600 text-white hover:bg-green-700">Terima &amp; Buat Akun</button>
+                    <x-field name="catatan" label="Alasan penerimaan" as="textarea" maxlength="1000" hint="Jelaskan bagaimana kualifikasi, berkas, dan hasil interview mendukung penerimaan." required />
+                    <button class="btn w-full bg-green-600 text-white hover:bg-green-700">Terima sebagai Karyawan</button>
                 </form>
             @endif
 
-            @if (in_array($status, [\App\Enums\StatusLamaran::Diajukan, \App\Enums\StatusLamaran::Seleksi]))
+            @if ($bisaPeriksa || ($status === \App\Enums\StatusLamaran::Seleksi && $lamaran->dinilai_pada))
                 <form method="POST" action="{{ route($rute.'.lamaran.tolak', $lamaran) }}" class="card space-y-3 p-5" data-konfirmasi="Tolak lamaran ini? Keputusan tidak dapat dibatalkan.">
                     @csrf
                     <h3 class="font-bold text-red-700">Tolak</h3>
-                    <x-field name="catatan" label="Alasan (internal)" as="textarea" rows="2" />
+                    <x-field name="alasan_penolakan" label="Alasan penolakan (internal)" as="textarea" maxlength="1000" required />
                     <button class="btn btn-danger w-full">Tolak Lamaran</button>
                 </form>
             @endif

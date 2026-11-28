@@ -2,12 +2,13 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Hrd;
 use App\Http\Controllers\Karyawan\BerandaController;
-use App\Http\Controllers\PwaController;
 use App\Http\Controllers\Publik;
+use App\Http\Controllers\PwaController;
+use App\Http\Middleware\RequirePelamar;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,7 +30,7 @@ Route::prefix('pelamar')->name('pelamar.')->group(function () {
     Route::get('google/callback', [Publik\GooglePelamarController::class, 'callback'])->name('google.callback');
 });
 
-Route::middleware(\App\Http\Middleware\RequirePelamar::class)->group(function () {
+Route::middleware(RequirePelamar::class)->group(function () {
     Route::get('/pelamar/lamaran', [Publik\AkunPelamarController::class, 'riwayat'])->name('pelamar.riwayat');
     Route::post('/pelamar/lamaran/tautkan', [Publik\AkunPelamarController::class, 'tautkanLamaran'])->middleware('throttle:5,1')->name('pelamar.tautkan');
     Route::post('/pelamar/keluar', [Publik\AkunPelamarController::class, 'keluar'])->name('pelamar.keluar');
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
 
             // Lowongan & Lamaran Masuk (Akses Penuh)
             Route::resource('lowongan', Hrd\LowonganController::class);
+            Route::get('interview', [Hrd\LamaranController::class, 'interview'])->name('interview.index');
+            Route::post('lamaran/{lamaran}/interview', [Hrd\LamaranController::class, 'simpanInterview'])->name('interview.store');
+            Route::post('lamaran/{lamaran}/berkas', [Hrd\LamaranController::class, 'proses'])->name('lamaran.berkas');
             Route::get('lamaran', [Hrd\LamaranController::class, 'index'])->name('lamaran.index');
             Route::get('lamaran/{lamaran}', [Hrd\LamaranController::class, 'show'])->name('lamaran.show');
             Route::get('lamaran/{lamaran}/dokumen/{jenis}', [Hrd\LamaranController::class, 'dokumen'])->name('lamaran.dokumen');
@@ -144,6 +148,9 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
             Route::resource('jabatan', Hrd\JabatanController::class)->except('show');
             Route::resource('lowongan', Hrd\LowonganController::class);
 
+            Route::get('interview', [Hrd\LamaranController::class, 'interview'])->name('interview.index');
+            Route::post('lamaran/{lamaran}/interview', [Hrd\LamaranController::class, 'simpanInterview'])->name('interview.store');
+            Route::post('lamaran/{lamaran}/berkas', [Hrd\LamaranController::class, 'proses'])->name('lamaran.berkas');
             Route::get('lamaran', [Hrd\LamaranController::class, 'index'])->name('lamaran.index');
             Route::get('lamaran/{lamaran}', [Hrd\LamaranController::class, 'show'])->name('lamaran.show');
             Route::get('lamaran/{lamaran}/dokumen/{jenis}', [Hrd\LamaranController::class, 'dokumen'])->name('lamaran.dokumen');

@@ -16,6 +16,7 @@
         ['admin.dashboard', 'Dashboard', 'admin.dashboard'],
         ['admin.lowongan.index', 'Lowongan', 'admin.lowongan.*'],
         ['admin.lamaran.index', 'Lamaran Masuk', 'admin.lamaran.*'],
+        ['admin.interview.index', 'Hasil Interview', 'admin.interview.*'],
         ['admin.karyawan.index', 'Karyawan', 'admin.karyawan.*'],
         ['admin.absensi.index', 'Absensi', 'admin.absensi.index'],
         ['admin.absensi.rekap', 'Rekap Absensi', 'admin.absensi.rekap'],
@@ -30,6 +31,7 @@
         ['hrd.izin.index', 'Pengajuan Izin', 'hrd.izin.*'],
         ['hrd.lowongan.index', 'Lowongan', 'hrd.lowongan.*'],
         ['hrd.lamaran.index', 'Lamaran Masuk', 'hrd.lamaran.*'],
+        ['hrd.interview.index', 'Hasil Interview', 'hrd.interview.*'],
         ['hrd.karyawan.index', 'Karyawan', 'hrd.karyawan.*'],
     ];
     $menuKaryawan = [['karyawan.beranda', 'Absensi Saya', 'karyawan.*']];
