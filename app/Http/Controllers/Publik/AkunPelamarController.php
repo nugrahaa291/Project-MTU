@@ -89,7 +89,7 @@ class AkunPelamarController extends Controller
         $data = $request->validate(['nip' => 'required|string|max:30', 'password' => 'required|string|max:255']);
         $user = $login->verifikasi($data['nip'], $data['password'], $request->ip());
         if ($user->must_change_password) {
-            return back()->withErrors(['nip' => 'Masuk ke halaman Absen dengan NIP dan PIN lama atau password sementara, lalu buat password baru.']);
+            return back()->withErrors(['nip' => 'Masuk ke halaman Absen dengan NIP dan password saat ini, lalu buat password baru.']);
         }
         try {
             $pelamar = $login->profilPelamar($user, $pemilik);

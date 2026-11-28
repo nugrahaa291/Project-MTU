@@ -152,7 +152,7 @@ function layarLogin() {
         h('div', { class: 'merek' }, 'MTU', h('span', {}, '.')),
         h('div', { class: 'kartu' },
             h('h1', {}, 'Masuk'),
-            h('p', { class: 'muted' }, 'Gunakan NIP dan password. Jika masih memakai PIN lama, masukkan PIN itu sekali untuk membuat password baru.'),
+            h('p', { class: 'muted' }, 'Masukkan NIP dan password karyawan Anda.'),
             S.notice ? h('div', { class: 'info' }, S.notice) : null,
             form),
     );
@@ -188,7 +188,7 @@ function layarGanti() {
             }
         },
     },
-    h('label', { for: 'lama' }, 'Password saat ini atau PIN lama'), lama,
+    h('label', { for: 'lama' }, 'Password saat ini'), lama,
     h('label', { for: 'baru' }, 'Password baru'), baru,
     h('label', { for: 'ulang' }, 'Ulangi Password baru'), ulang,
     tombol, galat);
