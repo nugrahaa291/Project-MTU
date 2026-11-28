@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Enums\StatusLamaran;
 use App\Models\Karyawan;
+use App\Models\Pelamar;
 use App\Models\User;
+use App\Support\Pin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +17,28 @@ use Tests\TestCase;
 class RekrutmenHrdTest extends TestCase
 {
     use RefreshDatabase, SiapkanData;
+
+    private function berkasValid(): array
+    {
+        $disk = Storage::fake('local');
+        foreach (['x/cv.pdf', 'x/f.png', 'x/k.png'] as $path) {
+            $disk->put($path, 'berkas uji');
+        }
+
+        return [
+            'verifikasi' => ['cv' => 'valid', 'ktp' => 'valid', 'pas_foto' => 'valid'],
+            'alasan_seleksi' => 'Pengalaman sesuai persyaratan dan didukung CV.',
+        ];
+    }
+
+    private function penilaian(string $rekomendasi = 'lanjut'): array
+    {
+        return [
+            'tanggal_interview' => today()->toDateString(), 'pewawancara' => 'Ibu Dewi',
+            'hasil_interview' => 'Dapat menjelaskan langkah penanganan gangguan.',
+            'rekomendasi_interview' => $rekomendasi,
+        ];
+    }
 
     public function test_tamu_dan_karyawan_tidak_bisa_membuka_area_hrd(): void
     {
@@ -34,17 +58,30 @@ class RekrutmenHrdTest extends TestCase
     {
         $hrd = $this->hrd();
         $lowongan = $this->lowongan();
-        $pelamar = \App\Models\Pelamar::create(['nama' => 'Dewi Lestari', 'email' => 'dewi@example.com']);
+        $pelamar = Pelamar::create(['nama' => 'Dewi Lestari', 'email' => 'dewi@example.com']);
         $lamaran = $this->lamaran($lowongan, ['pelamar_id' => $pelamar->id, 'nama' => $pelamar->nama, 'email' => $pelamar->email]);
 
         // Langsung terima dari "diajukan" ditolak: harus lewat seleksi dulu
         $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $lamaran), [
-            'email' => 'dewi@example.com', 'tanggal_masuk' => '2026-11-02',
+            'email' => 'dewi@example.com', 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Memenuhi kualifikasi.',
         ])->assertSessionHas('error');
         $this->assertSame(0, Karyawan::count());
 
-        $this->actingAs($hrd)->post(route('hrd.lamaran.proses', $lamaran))->assertSessionHas('success');
+        $this->actingAs($hrd)->post(route('hrd.lamaran.proses', $lamaran), $this->berkasValid())->assertSessionHas('success');
         $this->assertSame(StatusLamaran::Seleksi, $lamaran->fresh()->status);
+
+        $this->get(route('hrd.interview.index'))->assertOk()->assertSee($lamaran->kode);
+        $this->get(route('hrd.lamaran.show', $lamaran))->assertOk()->assertSee('Simpan hasil interview')->assertDontSee('Terima sebagai Karyawan');
+        $this->post(route('hrd.interview.store', $lamaran), $this->penilaian())->assertSessionHas('success');
+        $this->get(route('hrd.interview.index', ['tahap' => 'dinilai']))->assertOk()->assertSee($lamaran->kode);
+        $this->get(route('hrd.interview.index'))->assertDontSee($lamaran->kode);
+        $this->get(route('hrd.lamaran.show', $lamaran))->assertOk()->assertSee('Terima sebagai Karyawan');
+        $this->assertSame(0, Karyawan::count());
+
+        $this->post(route('hrd.lamaran.terima', $lamaran), [
+            'email' => $lamaran->email, 'tanggal_masuk' => today()->toDateString(), 'catatan' => '  ',
+        ])->assertSessionHasErrors('catatan');
+        $this->assertSame(0, Karyawan::count());
 
         $response = $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $lamaran), [
             'email' => 'dewi@example.com', 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Cocok',
@@ -54,6 +91,9 @@ class RekrutmenHrdTest extends TestCase
         $response->assertRedirect(route('hrd.karyawan.show', $karyawan))->assertSessionHas('pin_sementara');
 
         $this->assertSame(StatusLamaran::Diterima, $lamaran->fresh()->status);
+        $this->assertSame($hrd->id, $lamaran->fresh()->diperiksa_oleh);
+        $this->assertSame($hrd->id, $lamaran->fresh()->dinilai_oleh);
+        $this->assertSame($hrd->id, $lamaran->fresh()->diputuskan_oleh);
         $this->assertSame($lamaran->id, $karyawan->lamaran_id);
         $this->assertSame($karyawan->id, $pelamar->lamaran()->sole()->karyawan->id);
         $this->assertSame($lowongan->jabatan_id, $karyawan->jabatan_id); // jabatan ikut lowongan
@@ -70,7 +110,7 @@ class RekrutmenHrdTest extends TestCase
         // PIN sementara benar-benar cocok dengan hash dan tidak tersimpan polos di database
         $password = session('pin_sementara');
         $this->assertMatchesRegularExpression('/^\d{6}$/', $password);              // PIN sementara 6 digit
-        $this->assertTrue(\App\Support\Pin::valid($password));
+        $this->assertTrue(Pin::valid($password));
         $this->assertTrue(Hash::check($password, $user->password));
         $this->assertNotSame($password, $user->getRawOriginal('password'));
     }
@@ -82,8 +122,12 @@ class RekrutmenHrdTest extends TestCase
         $a = $this->lamaran($lowongan, ['status' => 'seleksi', 'email' => 'a@example.com']);
         $b = $this->lamaran($lowongan, ['status' => 'seleksi', 'email' => 'b@example.com']);
 
-        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $a), ['email' => 'a@example.com', 'tanggal_masuk' => '2026-11-02']);
-        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $b), ['email' => 'b@example.com', 'tanggal_masuk' => '2026-11-02'])
+        foreach ([$a, $b] as $lamaran) {
+            $this->actingAs($hrd)->post(route('hrd.lamaran.proses', $lamaran), $this->berkasValid())->assertSessionHas('success');
+            $this->post(route('hrd.interview.store', $lamaran), $this->penilaian())->assertSessionHas('success');
+        }
+        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $a), ['email' => 'a@example.com', 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Lolos penilaian.']);
+        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $b), ['email' => 'b@example.com', 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Lolos penilaian.'])
             ->assertSessionHas('error');
 
         $this->assertSame(1, Karyawan::count());
@@ -98,7 +142,7 @@ class RekrutmenHrdTest extends TestCase
         $lamaran = $this->lamaran($this->lowongan(), ['status' => 'seleksi']);
 
         $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $lamaran), [
-            'email' => $hrd->email, 'tanggal_masuk' => '2026-11-02',
+            'email' => $hrd->email, 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Memenuhi kualifikasi.',
         ])->assertSessionHasErrors('email');
 
         $this->assertSame(0, Karyawan::count());
@@ -112,13 +156,64 @@ class RekrutmenHrdTest extends TestCase
         $ditolak = $this->lamaran($lowongan, ['status' => 'ditolak']);
         $diterima = $this->lamaran($lowongan, ['status' => 'diterima']);
 
-        $this->actingAs($hrd)->post(route('hrd.lamaran.proses', $ditolak))->assertSessionHas('error');
-        $this->actingAs($hrd)->post(route('hrd.lamaran.tolak', $diterima))->assertSessionHas('error');
-        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $ditolak), ['email' => 'x@example.com', 'tanggal_masuk' => '2026-11-02'])
+        $this->actingAs($hrd)->post(route('hrd.lamaran.proses', $ditolak), $this->berkasValid())->assertSessionHas('error');
+        $this->actingAs($hrd)->post(route('hrd.lamaran.tolak', $diterima), ['catatan' => 'Sudah final'])->assertSessionHas('error');
+        $this->actingAs($hrd)->post(route('hrd.lamaran.terima', $ditolak), ['email' => 'x@example.com', 'tanggal_masuk' => '2026-11-02', 'catatan' => 'Lolos penilaian.'])
             ->assertSessionHas('error');
 
         $this->assertSame(StatusLamaran::Ditolak, $ditolak->fresh()->status);
         $this->assertSame(StatusLamaran::Diterima, $diterima->fresh()->status);
+    }
+
+    public function test_alasan_berkas_dan_hasil_interview_wajib_sebelum_keputusan(): void
+    {
+        $lamaran = $this->lamaran($this->lowongan(), ['status' => 'seleksi']);
+        $this->actingAs($this->admin());
+        $berkas = $this->berkasValid();
+        $terima = ['email' => $lamaran->email, 'tanggal_masuk' => today()->toDateString(), 'catatan' => 'Sesuai persyaratan.'];
+        $this->post(route('admin.interview.store', $lamaran), $this->penilaian())->assertSessionHas('error');
+        $this->post(route('admin.lamaran.terima', $lamaran), $terima)->assertSessionHas('error');
+        $this->post(route('admin.lamaran.proses', $lamaran), [...$berkas, 'alasan_seleksi' => '   '])->assertSessionHasErrors('alasan_seleksi');
+        $parsial = ['verifikasi' => ['ktp' => 'perbaikan'], 'alasan_seleksi' => 'Periksa ulang scan KTP.'];
+        $this->post(route('admin.lamaran.berkas', $lamaran), $parsial)->assertSessionHas('success');
+        $this->post(route('admin.lamaran.proses', $lamaran), $parsial)->assertSessionHas('error');
+        $this->assertNull($lamaran->fresh()->lolos_berkas_pada);
+        $this->assertSame('perbaikan', $lamaran->fresh()->verifikasi_berkas['ktp']);
+        Storage::disk('local')->delete('x/k.png');
+        $this->post(route('admin.lamaran.proses', $lamaran), $berkas)->assertSessionHas('error');
+        Storage::disk('local')->put('x/k.png', 'berkas');
+        $this->post(route('admin.lamaran.proses', $lamaran), $berkas)->assertSessionHas('success');
+        $this->post(route('admin.lamaran.terima', $lamaran), $terima)->assertSessionHas('error');
+        $this->post(route('admin.interview.store', $lamaran), ['hasil_interview' => ' '])->assertSessionHasErrors(['hasil_interview', 'tanggal_interview', 'pewawancara', 'rekomendasi_interview']);
+        $this->post(route('admin.interview.store', $lamaran), $this->penilaian('tidak_lanjut'))->assertSessionHas('success');
+        $this->post(route('admin.interview.store', $lamaran), $this->penilaian())->assertSessionHas('error');
+        $this->post(route('admin.lamaran.terima', $lamaran), [...$terima, 'catatan' => '  '])->assertSessionHasErrors('catatan');
+        $this->post(route('admin.lamaran.terima', $lamaran), $terima)->assertSessionHas('error');
+        $this->post(route('admin.lamaran.tolak', $lamaran), ['alasan_penolakan' => '  '])->assertSessionHasErrors('alasan_penolakan');
+        $this->post(route('admin.lamaran.tolak', $lamaran), ['alasan_penolakan' => 'Belum menguasai prosedur.'])->assertSessionHas('success');
+        $this->assertSame(0, Karyawan::count());
+        $this->get(route('admin.interview.index', ['tahap' => 'dinilai']))->assertOk()->assertSee($lamaran->kode);
+        $this->post(route('status.cek'), ['kode' => $lamaran->kode, 'no_hp' => $lamaran->no_hp])
+            ->assertOk()->assertSee('Ditolak')->assertDontSee('Belum menguasai prosedur.')->assertDontSee($berkas['alasan_seleksi'])->assertDontSee($this->penilaian()['hasil_interview']);
+    }
+
+    public function test_paket_driver_cukup_satu_pendukung_valid_dan_paklaring_opsional(): void
+    {
+        $disk = Storage::fake('local');
+        $lowongan = $this->lowongan(['paket_dokumen' => 'trailer']);
+        $kolom = array_keys(array_filter($lowongan->paketDokumen()));
+        $unggahan = [];
+        foreach (array_diff($kolom, ['pendukung']) as $jenis) {
+            $unggahan[$jenis] = 'driver/'.$jenis.'.pdf';
+            $disk->put($unggahan[$jenis], 'berkas');
+        }
+        $lamaran = $this->lamaran($lowongan, [...$unggahan, 'cv' => null, 'akte_lahir' => 'driver/akte.pdf']);
+        $disk->put('driver/akte.pdf', 'berkas');
+        $data = ['alasan_seleksi' => 'Pengalaman trailer sesuai.', 'verifikasi' => array_fill_keys(array_keys($unggahan), 'valid')];
+        $this->actingAs($this->hrd())->post(route('hrd.lamaran.proses', $lamaran), $data)->assertSessionHas('error');
+        $data['verifikasi']['akte_lahir'] = 'valid';
+        $this->post(route('hrd.lamaran.proses', $lamaran), $data)->assertSessionHas('success');
+        $this->assertNotNull($lamaran->fresh()->lolos_berkas_pada);
     }
 
     public function test_tolak_menyimpan_catatan(): void

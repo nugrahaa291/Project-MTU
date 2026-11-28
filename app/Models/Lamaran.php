@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'tanggal_lahir', 'alamat', 'pendidikan',
     'cv', 'pas_foto', 'ktp', 'sim', 'kk', 'skck', 'domisili', 'paklaring',
     'ijazah', 'akte_lahir', 'buku_nikah', 'surat_lamaran',
-    'status', 'catatan', 'diputuskan_pada',
+    'status', 'catatan', 'diputuskan_pada', 'diputuskan_oleh',
+    'verifikasi_berkas', 'alasan_seleksi', 'diperiksa_oleh', 'lolos_berkas_pada',
+    'tanggal_interview', 'pewawancara', 'hasil_interview', 'rekomendasi_interview', 'dinilai_oleh', 'dinilai_pada',
 ])]
 class Lamaran extends Model
 {
@@ -34,7 +36,6 @@ class Lamaran extends Model
         'buku_nikah' => 'Buku Nikah',
         'surat_lamaran' => 'Surat Lamaran',
     ];
-    
 
     /** Kolom data diri yang diisi pelamar pada tahap 1. */
     public const DATA_DIRI = [
@@ -50,6 +51,10 @@ class Lamaran extends Model
             'tanggal_lahir' => 'date',
             'status' => StatusLamaran::class,
             'diputuskan_pada' => 'datetime',
+            'verifikasi_berkas' => 'array',
+            'lolos_berkas_pada' => 'datetime',
+            'tanggal_interview' => 'date',
+            'dinilai_pada' => 'datetime',
         ];
     }
 
@@ -58,13 +63,36 @@ class Lamaran extends Model
         return $this->belongsTo(Lowongan::class);
     }
 
+    public function pemeriksa(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diperiksa_oleh');
+    }
+
+    public function penilai(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'dinilai_oleh');
+    }
+
+    public function pengambilKeputusan(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diputuskan_oleh');
+    }
+
+    public function statusPublik(): string
+    {
+        if ($this->status === StatusLamaran::Seleksi && $this->lolos_berkas_pada) {
+            return $this->dinilai_pada ? 'Menunggu keputusan akhir' : 'Lolos berkas · tahap interview';
+        }
+
+        return $this->status->label();
+    }
+
     public function karyawan(): HasOne
-    
     {
         return $this->hasOne(Karyawan::class);
     }
 
-        /**
+    /**
      * Berkas yang ditampilkan di halaman HRD: yang sudah diunggah,
      * ditambah yang diminta paket lowongannya (agar terlihat bila kosong).
      */

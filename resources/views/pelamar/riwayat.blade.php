@@ -16,7 +16,7 @@
             <article class="card min-w-0 p-5">
                 <p class="text-sm text-gray-500">{{ $lamaran->kode }} · {{ $lamaran->created_at->translatedFormat('d F Y') }}</p>
                 <h2 class="my-2 break-words text-lg font-bold">{{ $lamaran->lowongan->judul }}</h2>
-                <x-badge :warna="$lamaran->status->warna()">{{ $lamaran->status->label() }}</x-badge>
+                <x-badge :warna="$lamaran->status->warna()">{{ $lamaran->statusPublik() }}</x-badge>
             </article>
         @empty
             <p class="card p-5">Belum ada lamaran. <a class="font-semibold text-brand-dark" href="{{ route('lowongan.index') }}">Lihat lowongan</a></p>
