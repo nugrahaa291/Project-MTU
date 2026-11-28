@@ -11,7 +11,7 @@
                 <a class="btn {{ $karyawan ? 'btn-primary' : 'btn-outline' }}" href="{{ route('pelamar.login', ['karyawan' => 1]) }}">NIP karyawan</a>
             </nav>
             @if ($karyawan)
-                <p class="mb-3 text-sm">Gunakan password dari <a class="underline" href="{{ route('pwa') }}">halaman Absen</a>. Masih memakai PIN? Ganti di halaman Absen dahulu. Sudah punya akun pelamar? Masuk dengan email atau Google, lalu hubungkan NIP di Lamaran Saya agar riwayatnya ikut terpakai.</p>
+                <p class="mb-3 text-sm">Gunakan password dari <a class="underline" href="{{ route('pwa') }}">halaman Absen</a>. Sudah punya akun pelamar? Masuk dengan email atau Google, lalu hubungkan NIP di Lamaran Saya agar riwayatnya ikut terpakai.</p>
             @endif
         @endunless
         <form class="space-y-4" method="post" action="{{ route($daftar ? 'pelamar.daftar.store' : ($karyawan ? 'pelamar.login.karyawan' : 'pelamar.login.store')) }}">
