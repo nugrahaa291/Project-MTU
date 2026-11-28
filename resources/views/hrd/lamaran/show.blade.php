@@ -69,7 +69,7 @@
             @if ($status === \App\Enums\StatusLamaran::Diajukan)
                 <form method="POST" action="{{ route($rute.'.lamaran.proses', $lamaran) }}" class="card p-5">
                     @csrf
-                    <p class="mb-3 text-sm text-gray-600">Berkas sudah ditinjau dan layak lanjut ke tahap seleksi?</p>
+                    <p class="mb-3 text-sm text-gray-600">Berkas sudah ditinjau dan layak lanjut ke tahap seleksi</p>
                     <button class="btn btn-primary w-full">Proses ke Seleksi</button>
                 </form>
             @endif
